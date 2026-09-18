@@ -245,7 +245,7 @@ export function formatModelsReport(stats: ModelUsageStat[], activeModelKey?: str
 export function isSafeBashCommand(input: unknown): boolean {
   if (typeof input !== "object" || input === null || !("command" in input)) return false;
   const cmd = String((input as { command?: unknown }).command ?? "").trim();
-  return /^(?:ls|git\s+(?:status|diff|log|branch|show|rev-parse)|cat|head|tail|grep|rg|find|pwd|echo|which|uname|stat|file)\b/i.test(cmd);
+  return /^(?:ls|git\s+(?:status|diff|log|branch|show|rev-parse)|cat|head|tail|grep|rg|find|pwd|echo|printf|which|where|whereis|type|command\s+-[vV]|env|printenv|uname|hostname|stat|file|date|id|whoami)\b/i.test(cmd);
 }
 
 /**
@@ -398,10 +398,10 @@ export function evaluateModelSuitability(
       };
     })
     .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
       const pa = a.priority ? 1 : 0;
       const pb = b.priority ? 1 : 0;
-      if (pa !== pb) return pb - pa;
-      return b.score - a.score;
+      return pb - pa;
     });
 }
 
@@ -517,10 +517,10 @@ export async function recommendModelsForAction(
       return { ...h, score: 0, reason: "Jev model nevyhodnotil" };
     })
     .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
       const pa = a.priority ? 1 : 0;
       const pb = b.priority ? 1 : 0;
-      if (pa !== pb) return pb - pa;
-      return b.score - a.score;
+      return pb - pa;
     });
 
   // Pravidlo konfidence (dle agent-router): při závažném důsledku a nízké
