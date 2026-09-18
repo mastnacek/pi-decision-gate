@@ -91,6 +91,8 @@ export interface ModelSuitability {
   source: string;
   cachePenalty?: boolean;
   cacheNotice?: string;
+  /** True = model z pi-google-cca (v předplatném) — řadí se první. */
+  priority?: boolean;
   /** True = doporučený při nízké konfidenci Jev (top-2). */
   recommended?: boolean;
 }

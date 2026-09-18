@@ -301,7 +301,13 @@ export function evaluateModelSuitability(
   assessment: JevAssessment,
   ctx?: ExtensionContext,
 ): ModelSuitability[] {
-  const models = getRecentAndConfiguredModels(ctx);
+  // Seznam modelů pro přepnutí je omezen na katalog models.json
+  // (providery google / z-ai / moonshotai / deepseek). Aktivní model
+  // ponecháme vždy, i kdyby nebyl v katalogu.
+  const activeKey = ctx?.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+  const models = getRecentAndConfiguredModels(ctx).filter(
+    (m) => findCatalogEntry(m.modelKey) !== undefined || (activeKey !== undefined && m.modelKey === activeKey),
+  );
   const isDestructiveOrRisky =
     assessment.riskScore >= 1.0 ||
     assessment.irreversibleProb >= 0.5 ||
@@ -324,6 +330,8 @@ export function evaluateModelSuitability(
 
       const isHeavyReasoning = /claude-3[.-]7|claude-3[.-]5-sonnet|o3|o1|r1|gemini-1\.5-pro|gemini-2\.5-pro|gpt-4o\b/.test(id);
       const isFastFlash = /flash|haiku|mini|small|lite/.test(id);
+      const cat = findCatalogEntry(m.modelKey);
+      const priority = cat?.priority === true;
 
       if (isDestructiveOrRisky) {
         if (isHeavyReasoning) {
@@ -381,14 +389,20 @@ export function evaluateModelSuitability(
         provider: m.provider,
         id: m.id,
         score,
-        reason,
+        reason: priority ? `${reason} · ✓ CCA` : reason,
         turns: m.turns,
         source: m.source,
+        priority,
         cachePenalty,
         cacheNotice,
       };
     })
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      const pa = a.priority ? 1 : 0;
+      const pb = b.priority ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return b.score - a.score;
+    });
 }
 
 /**
@@ -502,7 +516,12 @@ export async function recommendModelsForAction(
       }
       return { ...h, score: 0, reason: "Jev model nevyhodnotil" };
     })
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      const pa = a.priority ? 1 : 0;
+      const pb = b.priority ? 1 : 0;
+      if (pa !== pb) return pb - pa;
+      return b.score - a.score;
+    });
 
   // Pravidlo konfidence (dle agent-router): při závažném důsledku a nízké
   // konfidenci Jev explicitně zvýrazni top-2 kandidáty.

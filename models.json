@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-18T12:50:46.670Z",
+  "generatedAt": "2026-09-18T13:24:42.886Z",
   "source": "https://openrouter.ai/api/v1/models",
   "providers": [
     "google",
@@ -9,45 +9,568 @@
   ],
   "models": [
     {
-      "id": "~deepseek/deepseek-pro-latest",
-      "provider": "deepseek",
+      "id": "~google/gemini-flash-latest",
+      "provider": "google",
       "kind": "latest",
-      "aliasTarget": "deepseek/deepseek-v4-pro-0813",
+      "priority": true,
+      "aliasTarget": "google/gemini-3.8-flash",
       "free": false,
-      "name": "DeepSeek: DeepSeek V4 Pro 0813",
-      "description": "DeepSeek V4 Pro 0813 is a large-scale mixture-of-experts model from DeepSeek. This is the GA release of DeepSeek V4 Pro.",
+      "name": "Google: Gemini 3.8 Flash",
+      "description": "Gemini 3.8 Flash is Google's most intelligent Flash model with significant gains from 3.7 Flash across software engineering, agentic tasks, and multi-step reasoning.",
       "contextLength": 1048576,
       "inputModalities": [
-        "text"
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
       ],
       "knowledgeCutoff": null,
       "pricing": {
-        "prompt": 6.6e-7,
-        "completion": 0.00000198
+        "prompt": 7.5e-7,
+        "completion": 0.00000375
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 41.2,
+          "coding": 76.3,
+          "agentic": 41.1
+        },
+        "designArena": {
+          "entries": 10,
+          "topElo": 1339,
+          "topArena": "models",
+          "topCategory": "gamedev",
+          "topWinRate": 54,
+          "codeCategories": {
+            "elo": 1324,
+            "winRate": 53
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-2.5-flash",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 2.5 Flash",
+      "description": "Gemini 2.5 Flash is Google's state-of-the-art workhorse model, specifically designed for advanced reasoning, coding, mathematics, and scientific tasks. It includes built-in \"thinking\" capabilities, enabling it to provide responses with greater...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "file",
+        "image",
+        "text",
+        "audio",
+        "video"
+      ],
+      "knowledgeCutoff": "2025-01-31",
+      "pricing": {
+        "prompt": 3e-7,
+        "completion": 0.0000025
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": {
+          "entries": 7,
+          "topElo": 1149,
+          "topArena": "models",
+          "topCategory": "dataviz",
+          "topWinRate": 49.1,
+          "codeCategories": {
+            "elo": 1119,
+            "winRate": 46.9
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-2.5-flash-lite",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 2.5 Flash Lite",
+      "description": "Gemini 2.5 Flash-Lite is a lightweight reasoning model in the Gemini 2.5 family, optimized for ultra-low latency and cost efficiency. It offers improved throughput, faster token generation, and better performance...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "file",
+        "audio",
+        "video"
+      ],
+      "knowledgeCutoff": "2025-01-31",
+      "pricing": {
+        "prompt": 1e-7,
+        "completion": 4e-7
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "google/gemini-2.5-pro",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 2.5 Pro",
+      "description": "Gemini 2.5 Pro is Google’s state-of-the-art AI model designed for advanced reasoning, coding, mathematics, and scientific tasks. It employs “thinking” capabilities, enabling it to reason through responses with enhanced accuracy...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "file",
+        "audio",
+        "video"
+      ],
+      "knowledgeCutoff": "2025-01-31",
+      "pricing": {
+        "prompt": 0.00000125,
+        "completion": 0.00001
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 16.7,
+          "coding": 33.3,
+          "agentic": 3.5
+        },
+        "designArena": {
+          "entries": 6,
+          "topElo": 1236,
+          "topArena": "models",
+          "topCategory": "dataviz",
+          "topWinRate": 68.2,
+          "codeCategories": {
+            "elo": 1167,
+            "winRate": 57.5
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-3-flash-preview",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3 Flash Preview",
+      "description": "Gemini 3 Flash Preview is a high speed, high value thinking model designed for agentic workflows, multi turn chat, and coding assistance. It delivers near Pro level reasoning and tool...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "file",
+        "audio",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 5e-7,
+        "completion": 0.000003
       },
       "reasoning": {
         "mandatory": false,
         "defaultEnabled": null,
         "supportedEfforts": [
-          "max",
           "high",
+          "medium",
+          "low",
+          "minimal"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": {
+          "entries": 12,
+          "topElo": 1212,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 62.7,
+          "codeCategories": {
+            "elo": 1204,
+            "winRate": 57.6
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.1 Pro Preview",
+      "description": "Gemini 3.1 Pro Preview is Google’s frontier reasoning model, delivering enhanced software engineering performance, improved agentic reliability, and more efficient token usage across complex workflows. Building on the multimodal foundation...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "audio",
+        "file",
+        "image",
+        "text",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": null,
+        "supportedEfforts": [
+          "high",
+          "medium",
           "low"
         ],
-        "defaultEffort": "high"
+        "defaultEffort": "medium"
       },
       "benchmarks": {
         "artificialAnalysis": {
-          "intelligence": 36.3,
+          "intelligence": 30.4,
           "coding": 68.8,
-          "agentic": 42.3
+          "agentic": 10.3
+        },
+        "designArena": {
+          "entries": 21,
+          "topElo": 1309,
+          "topArena": "models",
+          "topCategory": "svg",
+          "topWinRate": 67.8,
+          "codeCategories": {
+            "elo": 1259,
+            "winRate": 64.4
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-3.1-pro-preview-customtools",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.1 Pro Preview Custom Tools",
+      "description": "Gemini 3.1 Pro Preview Custom Tools is a variant of Gemini 3.1 Pro that improves tool selection behavior by preventing overuse of a general bash tool when more efficient third-party...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "audio",
+        "image",
+        "video",
+        "file"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": null,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "google/gemini-3.5-flash",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.5 Flash",
+      "description": "Gemini 3.5 Flash is Google's high-efficiency multimodal model, bringing near-Pro level coding and reasoning at Flash-tier cost and speed. It is highly optimized for coding proficiency and parallel agentic execution...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
+      ],
+      "knowledgeCutoff": "2025-01-01",
+      "pricing": {
+        "prompt": 0.0000015,
+        "completion": 0.000009
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low",
+          "minimal"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 33,
+          "coding": 70.1,
+          "agentic": 27.3
+        },
+        "designArena": {
+          "entries": 21,
+          "topElo": 1288,
+          "topArena": "models",
+          "topCategory": "gamedev",
+          "topWinRate": 53.9,
+          "codeCategories": {
+            "elo": 1278,
+            "winRate": 54.6
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-3.5-flash-lite",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.5 Flash Lite",
+      "description": "Gemini 3.5 Flash Lite is a high-efficiency model from Google with upgraded agentic capabilities. It is suited for subagents that execute focused tasks within complex, multi-agent workflows.",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 3e-7,
+        "completion": 0.0000025
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low",
+          "minimal"
+        ],
+        "defaultEffort": "minimal"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 22.7,
+          "coding": 49.3,
+          "agentic": 15.9
         },
         "designArena": null
+      }
+    },
+    {
+      "id": "google/gemini-3.6-flash",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.6 Flash",
+      "description": "Gemini 3.6 Flash is a high-efficiency model from Google for coding, agentic workflows, and web and app development. It is designed to produce polished outputs with fewer unnecessary edits and...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 7.5e-7,
+        "completion": 0.00000375
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low",
+          "minimal"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 34.3,
+          "coding": 69.2,
+          "agentic": 30.2
+        },
+        "designArena": {
+          "entries": 14,
+          "topElo": 1318,
+          "topArena": "models",
+          "topCategory": "uicomponent",
+          "topWinRate": 55.4,
+          "codeCategories": {
+            "elo": 1305,
+            "winRate": 53.8
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-3.7-flash",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.7 Flash",
+      "description": "Gemini 3.7 Flash is a multimodal model from Google for fast agentic workflows, coding, and complex multi-step reasoning. It is designed for tasks that require responsive performance and reliable multi-step...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 7.5e-7,
+        "completion": 0.00000375
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 39.4,
+          "coding": 76.1,
+          "agentic": 36.4
+        },
+        "designArena": {
+          "entries": 12,
+          "topElo": 1351,
+          "topArena": "models",
+          "topCategory": "gamedev",
+          "topWinRate": 56.3,
+          "codeCategories": {
+            "elo": 1323,
+            "winRate": 56.3
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemini-3.8-flash",
+      "provider": "google",
+      "kind": "latest",
+      "priority": true,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Google: Gemini 3.8 Flash",
+      "description": "Gemini 3.8 Flash is Google's most intelligent Flash model with significant gains from 3.7 Flash across software engineering, agentic tasks, and multi-step reasoning.",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 7.5e-7,
+        "completion": 0.00000375
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 41.2,
+          "coding": 76.3,
+          "agentic": 41.1
+        },
+        "designArena": {
+          "entries": 10,
+          "topElo": 1339,
+          "topArena": "models",
+          "topCategory": "gamedev",
+          "topWinRate": 54,
+          "codeCategories": {
+            "elo": 1324,
+            "winRate": 53
+          }
+        }
       }
     },
     {
       "id": "~deepseek/deepseek-flash-latest",
       "provider": "deepseek",
       "kind": "latest",
+      "priority": false,
       "aliasTarget": "deepseek/deepseek-v4.1-flash",
       "free": false,
       "name": "DeepSeek: DeepSeek V4.1 Flash",
@@ -82,103 +605,47 @@
       }
     },
     {
-      "id": "~z-ai/glm-flash-latest",
-      "provider": "z-ai",
+      "id": "~deepseek/deepseek-pro-latest",
+      "provider": "deepseek",
       "kind": "latest",
-      "aliasTarget": "z-ai/glm-5.3-flash",
+      "priority": false,
+      "aliasTarget": "deepseek/deepseek-v4-pro-0813",
       "free": false,
-      "name": "Z.ai: GLM 5.3 Flash",
-      "description": "GLM-5.3-Flash is a native multimodal model from Z.ai. It is suited for efficient coding and long-horizon agent tasks. Its hybrid sparse and linear attention architecture maintains accurate long-context behavior while...",
-      "contextLength": 1310720,
-      "inputModalities": [
-        "text",
-        "image",
-        "video"
-      ],
-      "knowledgeCutoff": null,
-      "pricing": {
-        "prompt": 9e-8,
-        "completion": 3e-7
-      },
-      "reasoning": {
-        "mandatory": true,
-        "defaultEnabled": true,
-        "supportedEfforts": [
-          "max",
-          "high",
-          "low"
-        ],
-        "defaultEffort": "max"
-      },
-      "benchmarks": {
-        "artificialAnalysis": {
-          "intelligence": 41.9,
-          "coding": 71.5,
-          "agentic": 51.2
-        },
-        "designArena": {
-          "entries": 8,
-          "topElo": 1354,
-          "topArena": "models",
-          "topCategory": "3d",
-          "topWinRate": 59.3,
-          "codeCategories": {
-            "elo": 1299,
-            "winRate": 49.7
-          }
-        }
-      }
-    },
-    {
-      "id": "~z-ai/glm-latest",
-      "provider": "z-ai",
-      "kind": "latest",
-      "aliasTarget": "z-ai/glm-5.3",
-      "free": false,
-      "name": "Z.ai: GLM 5.3",
-      "description": "GLM-5.3 is a large-scale reasoning model from Z.ai, built for complex software engineering and long-horizon agent tasks. It supports text input and output with a 1M-token context window, and improves...",
-      "contextLength": 1310720,
+      "name": "DeepSeek: DeepSeek V4 Pro 0813",
+      "description": "DeepSeek V4 Pro 0813 is a large-scale mixture-of-experts model from DeepSeek. This is the GA release of DeepSeek V4 Pro.",
+      "contextLength": 1048576,
       "inputModalities": [
         "text"
       ],
       "knowledgeCutoff": null,
       "pricing": {
-        "prompt": 0.0000014,
-        "completion": 0.0000044
+        "prompt": 6.5868e-7,
+        "completion": 0.00000197604
       },
       "reasoning": {
-        "mandatory": true,
-        "defaultEnabled": true,
+        "mandatory": false,
+        "defaultEnabled": null,
         "supportedEfforts": [
           "max",
           "high",
           "low"
         ],
-        "defaultEffort": "max"
+        "defaultEffort": "high"
       },
       "benchmarks": {
         "artificialAnalysis": {
-          "intelligence": 44.9,
-          "coding": 74.8,
-          "agentic": 53.4
+          "intelligence": 36.3,
+          "coding": 68.8,
+          "agentic": 42.3
         },
-        "designArena": {
-          "entries": 11,
-          "topElo": 1389,
-          "topArena": "models",
-          "topCategory": "3d",
-          "topWinRate": 67.1,
-          "codeCategories": {
-            "elo": 1330,
-            "winRate": 57.6
-          }
-        }
+        "designArena": null
       }
     },
     {
       "id": "~deepseek/deepseek-v4-flash-latest",
       "provider": "deepseek",
       "kind": "latest",
+      "priority": false,
       "aliasTarget": "deepseek/deepseek-v4-flash-0731",
       "free": false,
       "name": "DeepSeek: DeepSeek V4 Flash 0731",
@@ -222,100 +689,10 @@
       }
     },
     {
-      "id": "deepseek/deepseek-v4-flash-0731:free",
-      "provider": "deepseek",
-      "kind": "free",
-      "aliasTarget": null,
-      "free": true,
-      "name": "DeepSeek: DeepSeek V4 Flash 0731 (free)",
-      "description": "DeepSeek V4 Flash 0731 is a sparse mixture-of-experts model from DeepSeek, with 13B active parameters out of 284B total. This re-post-trained revision is suited for coding, reasoning, and agent workflows....",
-      "contextLength": 1048576,
-      "inputModalities": [
-        "text"
-      ],
-      "knowledgeCutoff": null,
-      "pricing": {
-        "prompt": 0,
-        "completion": 0
-      },
-      "reasoning": {
-        "mandatory": false,
-        "defaultEnabled": true,
-        "supportedEfforts": [
-          "max",
-          "high",
-          "low"
-        ],
-        "defaultEffort": "high"
-      },
-      "benchmarks": {
-        "artificialAnalysis": {
-          "intelligence": 34.5,
-          "coding": 69.1,
-          "agentic": 41.7
-        },
-        "designArena": {
-          "entries": 8,
-          "topElo": 1252,
-          "topArena": "models",
-          "topCategory": "uicomponent",
-          "topWinRate": 47,
-          "codeCategories": {
-            "elo": 1245,
-            "winRate": 46.5
-          }
-        }
-      }
-    },
-    {
-      "id": "z-ai/glm-5.2:free",
-      "provider": "z-ai",
-      "kind": "free",
-      "aliasTarget": null,
-      "free": true,
-      "name": "Z.ai: GLM 5.2 (free)",
-      "description": "GLM 5.2 is a large-scale reasoning model from Z.ai. It supports text input and output with a 1M-token context window, and is suited for long-horizon agent workflows, project-level software engineering,...",
-      "contextLength": 32768,
-      "inputModalities": [
-        "text"
-      ],
-      "knowledgeCutoff": null,
-      "pricing": {
-        "prompt": 0,
-        "completion": 0
-      },
-      "reasoning": {
-        "mandatory": false,
-        "defaultEnabled": true,
-        "supportedEfforts": [
-          "xhigh",
-          "high"
-        ],
-        "defaultEffort": "high"
-      },
-      "benchmarks": {
-        "artificialAnalysis": {
-          "intelligence": 34,
-          "coding": 68.8,
-          "agentic": 39.4
-        },
-        "designArena": {
-          "entries": 16,
-          "topElo": 1321,
-          "topArena": "models",
-          "topCategory": "3d",
-          "topWinRate": 53.9,
-          "codeCategories": {
-            "elo": 1308,
-            "winRate": 53
-          }
-        }
-      }
-    },
-    {
       "id": "~google/gemini-pro-latest",
       "provider": "google",
       "kind": "latest",
+      "priority": false,
       "aliasTarget": "google/gemini-3.1-pro-preview",
       "free": false,
       "name": "Google: Gemini 3.1 Pro Preview",
@@ -366,6 +743,7 @@
       "id": "~moonshotai/kimi-latest",
       "provider": "moonshotai",
       "kind": "latest",
+      "priority": false,
       "aliasTarget": "moonshotai/kimi-k3",
       "free": false,
       "name": "MoonshotAI: Kimi K3",
@@ -378,8 +756,8 @@
       ],
       "knowledgeCutoff": null,
       "pricing": {
-        "prompt": 0.0000021,
-        "completion": 0.00001095
+        "prompt": 0.0000020705,
+        "completion": 0.0000115948
       },
       "reasoning": {
         "mandatory": false,
@@ -411,51 +789,144 @@
       }
     },
     {
-      "id": "~google/gemini-flash-latest",
-      "provider": "google",
+      "id": "~z-ai/glm-flash-latest",
+      "provider": "z-ai",
       "kind": "latest",
-      "aliasTarget": "google/gemini-3.8-flash",
+      "priority": false,
+      "aliasTarget": "z-ai/glm-5.3-flash",
       "free": false,
-      "name": "Google: Gemini 3.8 Flash",
-      "description": "Gemini 3.8 Flash is Google's most intelligent Flash model with significant gains from 3.7 Flash across software engineering, agentic tasks, and multi-step reasoning.",
-      "contextLength": 1048576,
+      "name": "Z.ai: GLM 5.3 Flash",
+      "description": "GLM-5.3-Flash is a native multimodal model from Z.ai. It is suited for efficient coding and long-horizon agent tasks. Its hybrid sparse and linear attention architecture maintains accurate long-context behavior while...",
+      "contextLength": 1310720,
       "inputModalities": [
         "text",
         "image",
-        "video",
-        "file",
-        "audio"
+        "video"
       ],
       "knowledgeCutoff": null,
       "pricing": {
-        "prompt": 7.5e-7,
-        "completion": 0.00000375
+        "prompt": 9e-8,
+        "completion": 3e-7
       },
       "reasoning": {
         "mandatory": true,
         "defaultEnabled": true,
         "supportedEfforts": [
+          "max",
           "high",
-          "medium",
           "low"
         ],
-        "defaultEffort": "medium"
+        "defaultEffort": "max"
       },
       "benchmarks": {
         "artificialAnalysis": {
-          "intelligence": 41.2,
-          "coding": 76.3,
-          "agentic": 41.1
+          "intelligence": 41.9,
+          "coding": 71.5,
+          "agentic": 51.2
         },
         "designArena": {
-          "entries": 10,
-          "topElo": 1339,
+          "entries": 8,
+          "topElo": 1354,
           "topArena": "models",
-          "topCategory": "gamedev",
-          "topWinRate": 54,
+          "topCategory": "3d",
+          "topWinRate": 59.3,
           "codeCategories": {
-            "elo": 1324,
-            "winRate": 53
+            "elo": 1299,
+            "winRate": 49.7
+          }
+        }
+      }
+    },
+    {
+      "id": "~z-ai/glm-latest",
+      "provider": "z-ai",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": "z-ai/glm-5.3",
+      "free": false,
+      "name": "Z.ai: GLM 5.3",
+      "description": "GLM-5.3 is a large-scale reasoning model from Z.ai, built for complex software engineering and long-horizon agent tasks. It supports text input and output with a 1M-token context window, and improves...",
+      "contextLength": 1310720,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.0000014,
+        "completion": 0.0000044
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "max"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 44.9,
+          "coding": 74.8,
+          "agentic": 53.4
+        },
+        "designArena": {
+          "entries": 11,
+          "topElo": 1389,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 67.1,
+          "codeCategories": {
+            "elo": 1330,
+            "winRate": 57.6
+          }
+        }
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash-0731:free",
+      "provider": "deepseek",
+      "kind": "free",
+      "priority": false,
+      "aliasTarget": null,
+      "free": true,
+      "name": "DeepSeek: DeepSeek V4 Flash 0731 (free)",
+      "description": "DeepSeek V4 Flash 0731 is a sparse mixture-of-experts model from DeepSeek, with 13B active parameters out of 284B total. This re-post-trained revision is suited for coding, reasoning, and agent workflows....",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 34.5,
+          "coding": 69.1,
+          "agentic": 41.7
+        },
+        "designArena": {
+          "entries": 8,
+          "topElo": 1252,
+          "topArena": "models",
+          "topCategory": "uicomponent",
+          "topWinRate": 47,
+          "codeCategories": {
+            "elo": 1245,
+            "winRate": 46.5
           }
         }
       }
@@ -464,6 +935,7 @@
       "id": "google/gemma-4-26b-a4b-it:free",
       "provider": "google",
       "kind": "free",
+      "priority": false,
       "aliasTarget": null,
       "free": true,
       "name": "Google: Gemma 4 26B A4B  (free)",
@@ -498,6 +970,7 @@
       "id": "google/gemma-4-31b-it:free",
       "provider": "google",
       "kind": "free",
+      "priority": false,
       "aliasTarget": null,
       "free": true,
       "name": "Google: Gemma 4 31B (free)",
@@ -526,6 +999,52 @@
           "agentic": 6.7
         },
         "designArena": null
+      }
+    },
+    {
+      "id": "z-ai/glm-5.2:free",
+      "provider": "z-ai",
+      "kind": "free",
+      "priority": false,
+      "aliasTarget": null,
+      "free": true,
+      "name": "Z.ai: GLM 5.2 (free)",
+      "description": "GLM 5.2 is a large-scale reasoning model from Z.ai. It supports text input and output with a 1M-token context window, and is suited for long-horizon agent workflows, project-level software engineering,...",
+      "contextLength": 32768,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "xhigh",
+          "high"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 34,
+          "coding": 68.8,
+          "agentic": 39.4
+        },
+        "designArena": {
+          "entries": 16,
+          "topElo": 1321,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 53.9,
+          "codeCategories": {
+            "elo": 1308,
+            "winRate": 53
+          }
+        }
       }
     }
   ]

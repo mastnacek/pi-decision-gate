@@ -6,7 +6,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { fmtSmallAmount } from "./balance";
 import { state } from "./config";
 import { assessActionWithJev, matchesDestructivePattern } from "./jev";
-import { getHerdrPaneRecommendation, getThinkingRecommendation, recommendModelsForAction } from "./models";
+import { evaluateModelSuitability, getHerdrPaneRecommendation, getThinkingRecommendation, recommendModelsForAction } from "./models";
 import { isHerdrEnvironment, promptHerdrAgent, splitHerdrPane, startHerdrAgent } from "./herdr";
 import {
   ANSI_BOLD,
@@ -25,7 +25,7 @@ import {
   paint,
   updateStatusline,
 } from "./status";
-import type { DecisionRecord } from "./types";
+import type { DecisionRecord, ModelSuitability, ThinkingRecommendation } from "./types";
 
 /**
  * Uloží záznam o rozhodnutí do auditního logu (.pi/decision-gate/decisions.jsonl)
@@ -42,6 +42,42 @@ function logDecision(record: DecisionRecord, cwd?: string): void {
   } catch {
     // ignorujeme chybu zápisu logu
   }
+}
+
+/**
+ * Sestaví jednořádkový verdikt o myšlení a modelu pro hlavičku dialogu.
+ */
+function buildDecisionVerdictLine(
+  ctx: ExtensionContext,
+  thinkingRec: ThinkingRecommendation,
+  currentCandidate: ModelSuitability | undefined,
+): string {
+  const currentThinking = (ctx.thinkingLevel ?? "medium").toLowerCase();
+
+  const thinkingSeg = thinkingRec.canOptimize
+    ? `${currentThinking} → ${thinkingRec.recommendedLevel}`
+    : `${currentThinking} ✓`;
+
+  const reasons: string[] = [];
+  if (thinkingRec.canOptimize) {
+    reasons.push(thinkingRec.reason);
+  }
+  if (currentCandidate?.cacheNotice?.startsWith("✓")) {
+    reasons.push("přepnutí modelu by ztratilo prompt cache");
+  }
+
+  const reasonText =
+    reasons.length > 0 ? reasons.join("; ") : "aktuální nastavení vyhovuje";
+
+  return [
+    paint(ELDRITCH_PURPLE, "🧠"),
+    paint(ELDRITCH_TEXT, thinkingSeg),
+    paint(ELDRITCH_DIM, "·"),
+    paint(ELDRITCH_CYAN, "🤖"),
+    paint(ELDRITCH_TEXT, "keep model"),
+    paint(ELDRITCH_DIM, "—"),
+    paint(ELDRITCH_GRAY, reasonText),
+  ].join(" ");
 }
 
 /**
@@ -134,12 +170,14 @@ export async function handleToolCallGate(
   const herdrRec = getHerdrPaneRecommendation(event.toolName, event.input, assessment, ctx);
 
   const hints: string[] = [];
-  if (thinkingRec.canOptimize) {
-    hints.push(`${paint(ELDRITCH_YELLOW, "💡 Doporučení:")} ${paint(ELDRITCH_TEXT, thinkingRec.reason)}`);
-  }
   if (herdrRec.suitable) {
     hints.push(`${paint(ELDRITCH_CYAN, "🪟 Herdr:")} ${paint(ELDRITCH_TEXT, herdrRec.reason)}`);
   }
+
+  // Jednořádkový verdikt o myšlení a modelu (nad "Vyberte akci")
+  const suitability = evaluateModelSuitability(event.toolName, event.input, assessment, ctx);
+  const currentCandidate = suitability.find((c) => c.modelKey === modelLabel);
+  const verdictLine = buildDecisionVerdictLine(ctx, thinkingRec, currentCandidate);
 
   const header = [
     `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🛡️  Rozhodnutí modelu vyžaduje schválení${ANSI_RESET}`,
@@ -152,6 +190,7 @@ export async function handleToolCallGate(
     `${ANSI_BOLD}${ELDRITCH_PURPLE}Navrhované argumenty:${ANSI_RESET}`,
     preview,
     "",
+    verdictLine,
     paint(ELDRITCH_PURPLE_LIGHT, "Vyberte akci:"),
   ].join("\n");
 

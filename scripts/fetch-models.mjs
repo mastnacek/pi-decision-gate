@@ -13,8 +13,35 @@ const API_URL = "https://openrouter.ai/api/v1/models";
 const PROVIDERS = ["google", "z-ai", "moonshotai", "deepseek"];
 const DEFAULT_OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "models.json");
 
+// Modely z pi-google-cca (Google Cloud Code Assist OAuth) — uživatel je má
+// v předplatném, takže mají v seznamu přepínání modelů přednost.
+// Jedná se o pi google catalog id, které CCA směruje (ANTIGRAVITY_MODEL_ROUTING
+// + thinking token budgets pro rodinu 2.5).
+const GOOGLE_CCA_MODEL_IDS = [
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.5-flash-lite",
+  "gemini-3-flash-preview",
+  "gemini-flash-latest",
+  "gemini-flash-lite-latest",
+  "gemini-3.1-pro-preview",
+  "gemini-3.1-pro-preview-customtools",
+  "gemini-2.5-pro",
+  "gemini-2.5-flash",
+  "gemini-2.5-flash-lite",
+];
+
 function providerOf(id) {
   return id.replace(/^~/, "").split("/")[0];
+}
+
+/** Přesná shoda: "google/gemini-3.8-flash" -> true, "google/gemini-3.8-flash:batch" -> false. */
+function isGoogleCcaModel(id) {
+  const withoutTilde = id.replace(/^~/, "");
+  if (!withoutTilde.startsWith("google/")) return false;
+  return GOOGLE_CCA_MODEL_IDS.includes(withoutTilde.slice("google/".length));
 }
 
 function summarizeDesignArena(entries) {
@@ -65,6 +92,7 @@ function build(id, m, byId) {
     id,
     provider: providerOf(id),
     kind: free ? "free" : "latest",
+    priority: isGoogleCcaModel(id),
     aliasTarget: targetSlug ?? null,
     free,
     name: src.name ?? null,
@@ -102,10 +130,21 @@ async function main() {
   const selected = all.filter((m) => {
     const p = providerOf(m.id);
     if (!PROVIDERS.includes(p)) return false;
+    if (p === "google") {
+      // Modely z pi-google-cca (předplatné) + -latest/:free aliasy
+      return isGoogleCcaModel(m.id) || m.id.includes(":free") || /-latest$/.test(m.id);
+    }
     return m.id.includes(":free") || /-latest$/.test(m.id);
   });
 
   const models = selected.map((m) => build(m.id, m, byId));
+  // Modely z pi-google-cca (v předplatném) mají přednost — řadíme je první.
+  models.sort((a, b) => {
+    const pa = a.priority ? 1 : 0;
+    const pb = b.priority ? 1 : 0;
+    if (pa !== pb) return pb - pa;
+    return a.id.localeCompare(b.id);
+  });
   const doc = {
     generatedAt: new Date().toISOString(),
     source: API_URL,
