@@ -1,0 +1,76 @@
+// types.ts — typové definice pro pi-decision-gate
+
+export type ApprovalMode = "always" | "risky" | "destructive" | "off";
+
+export interface DecisionGateConfig {
+  /** Hlavní vypínač brány */
+  enabled: boolean;
+  /**
+   * Režim schvalování:
+   * - always: schvalovat každé neosvobozené volání nástroje
+   * - risky: schvalovat na základě Jev hodnocení rizika (skóre >= threshold)
+   * - destructive: schvalovat pouze destruktivní akce (rm, git reset, drop...)
+   * - off: brána je neaktivní
+   */
+  mode: ApprovalMode;
+  /** Práh rizika pro Jev model (0.0 - 1.0, výchozí 0.7) */
+  threshold: number;
+  /** Zda používat Jev model přes OpenRouter pro sémantické posuzování akcí */
+  useJev: boolean;
+  /** Identifikátor modelu Jev na OpenRouteru */
+  jevModel: string;
+  /** Nástroje osvobozené od schvalování (např. ["read"]) */
+  exemptTools: string[];
+  /** Povolit úpravu parametrů nástroje před schválením */
+  allowEdit: boolean;
+  /** Zda logovat rozhodnutí do .pi/decision-gate/decisions.jsonl */
+  logDecisions: boolean;
+}
+
+export interface JevAssessment {
+  riskScore: number;
+  riskCategory: "safe" | "moderate" | "destructive";
+  irreversibleProb: number;
+  offTaskProb: number;
+  confidence: number;
+  costUsd: number;
+  costCzk?: number;
+  modelUsed: string;
+}
+
+export interface DecisionRecord {
+  id: string;
+  timestamp: string;
+  model: {
+    provider?: string;
+    id?: string;
+    thinking?: string;
+  };
+  tool: string;
+  input: unknown;
+  verdict: "approved" | "edited" | "rejected" | "auto_approved";
+  assessment?: JevAssessment;
+}
+
+export interface BalanceInfo {
+  remaining: number;
+  usage: number;
+}
+
+export interface ModelUsageStat {
+  modelKey: string;
+  provider: string;
+  id: string;
+  turns: number;
+  lastUsed: number;
+  source: "session" | "config" | "active";
+}
+
+export interface DecisionGateState {
+  config: DecisionGateConfig;
+  sessionCostUsd: number;
+  approvedCount: number;
+  blockedCount: number;
+  editedCount: number;
+  sessionExemptions: Set<string>;
+}
