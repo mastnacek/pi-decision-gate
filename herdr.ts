@@ -79,7 +79,7 @@ export async function startHerdrAgent(input: {
   if (kind === "pi") {
     agentArgs.push("--use-theme", input.theme ?? "eldritch");
     if (input.model) {
-      agentArgs.push("-m", input.model);
+      agentArgs.push("--model", input.model);
     }
     if (input.thinking) {
       agentArgs.push("--thinking", input.thinking);
