@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // fetch-models.mjs — refresh models.json from the OpenRouter catalog.
-// Providers: google, z-ai, moonshotai, deepseek.
-// Captures: ~...-latest router slugs + :free variants, with reasoning/thinking info,
-// description, and benchmark indices resolved from the alias target.
+// Providers: google, z-ai, moonshotai, deepseek, qwen.
+// Captures: ~...-latest router slugs + :free variants, plus explicit rolling
+// slugs pro google CCA a Qwen (které "-latest" aliasy nemají).
 // Usage:  node scripts/fetch-models.mjs [--out <path>]
 
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -10,7 +10,7 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const API_URL = "https://openrouter.ai/api/v1/models";
-const PROVIDERS = ["google", "z-ai", "moonshotai", "deepseek"];
+const PROVIDERS = ["google", "z-ai", "moonshotai", "deepseek", "qwen"];
 const DEFAULT_OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "models.json");
 
 // Modely z pi-google-cca (Google Cloud Code Assist OAuth) — uživatel je má
@@ -42,6 +42,31 @@ function isGoogleCcaModel(id) {
   const withoutTilde = id.replace(/^~/, "");
   if (!withoutTilde.startsWith("google/")) return false;
   return GOOGLE_CCA_MODEL_IDS.includes(withoutTilde.slice("google/".length));
+}
+
+// Aktuální Qwen modely. Qwen na OpenRouteru nepoužívá "-latest" aliasy
+// (na rozdíl od google/deepseek/z-ai/moonshotai) — aktuální generace jsou
+// stabilní "rolling" slugy + datované snapshoty vlajkových modelů.
+const QWEN_MODEL_IDS = [
+  "qwen3-coder",
+  "qwen3-coder-plus",
+  "qwen3-coder-flash",
+  "qwen3-max",
+  "qwen3-max-thinking",
+  "qwen3.7-flash",
+  "qwen3.7-plus",
+  "qwen3.7-max",
+  "qwen3.8-flash",
+  "qwen3.8-27b",
+  "qwen3.8-2.4t-a95b",
+  "qwen3.8-max-0902",
+];
+
+/** Přesná shoda: "qwen/qwen3.8-flash" -> true, "qwen/qwen3.8-flash:batch" -> false. */
+function isQwenCurrentModel(id) {
+  const withoutTilde = id.replace(/^~/, "");
+  if (!withoutTilde.startsWith("qwen/")) return false;
+  return QWEN_MODEL_IDS.includes(withoutTilde.slice("qwen/".length));
 }
 
 function summarizeDesignArena(entries) {
@@ -130,10 +155,8 @@ async function main() {
   const selected = all.filter((m) => {
     const p = providerOf(m.id);
     if (!PROVIDERS.includes(p)) return false;
-    if (p === "google") {
-      // Modely z pi-google-cca (předplatné) + -latest/:free aliasy
-      return isGoogleCcaModel(m.id) || m.id.includes(":free") || /-latest$/.test(m.id);
-    }
+    // Google CCA a Qwen rolling slugy nemají "-latest" aliasy → výslovný seznam.
+    if (isGoogleCcaModel(m.id) || isQwenCurrentModel(m.id)) return true;
     return m.id.includes(":free") || /-latest$/.test(m.id);
   });
 

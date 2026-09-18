@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-09-18T13:24:42.886Z",
+  "generatedAt": "2026-09-18T13:45:01.688Z",
   "source": "https://openrouter.ai/api/v1/models",
   "providers": [
     "google",
     "z-ai",
     "moonshotai",
-    "deepseek"
+    "deepseek",
+    "qwen"
   ],
   "models": [
     {
@@ -756,8 +757,8 @@
       ],
       "knowledgeCutoff": null,
       "pricing": {
-        "prompt": 0.0000020705,
-        "completion": 0.0000115948
+        "prompt": 0.0000021,
+        "completion": 0.00001095
       },
       "reasoning": {
         "mandatory": false,
@@ -997,6 +998,476 @@
           "intelligence": 15.4,
           "coding": 43.4,
           "agentic": 6.7
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3-coder",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3 Coder 480B A35B",
+      "description": "Qwen3-Coder-480B-A35B-Instruct is a Mixture-of-Experts (MoE) code generation model developed by the Qwen team. It is optimized for agentic coding tasks such as function calling, tool use, and long-context reasoning over...",
+      "contextLength": 262144,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": "2025-06-30",
+      "pricing": {
+        "prompt": 3e-7,
+        "completion": 0.000001
+      },
+      "reasoning": {
+        "mandatory": null,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": {
+          "entries": 5,
+          "topElo": 1171,
+          "topArena": "models",
+          "topCategory": "website",
+          "topWinRate": 61.7,
+          "codeCategories": {
+            "elo": 1158,
+            "winRate": 61.2
+          }
+        }
+      }
+    },
+    {
+      "id": "qwen/qwen3-coder-flash",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3 Coder Flash",
+      "description": "Qwen3 Coder Flash is Alibaba's fast and cost efficient version of their proprietary Qwen3 Coder Plus. It is a powerful coding agent model specializing in autonomous programming via tool calling...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": "2025-06-30",
+      "pricing": {
+        "prompt": 1.95e-7,
+        "completion": 9.75e-7
+      },
+      "reasoning": {
+        "mandatory": null,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3-coder-plus",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3 Coder Plus",
+      "description": "Qwen3 Coder Plus is Alibaba's proprietary version of the Open Source Qwen3 Coder 480B A35B. It is a powerful coding agent model specializing in autonomous programming via tool calling and...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": "2025-06-30",
+      "pricing": {
+        "prompt": 6.5e-7,
+        "completion": 0.00000325
+      },
+      "reasoning": {
+        "mandatory": null,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3-max",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3 Max",
+      "description": "Qwen3-Max is an updated release built on the Qwen3 series, offering major improvements in reasoning, instruction following, multilingual support, and long-tail knowledge coverage compared to the January 2025 version. It...",
+      "contextLength": 262144,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": "2025-06-30",
+      "pricing": {
+        "prompt": 7.8e-7,
+        "completion": 0.0000039
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": {
+          "entries": 8,
+          "topElo": 1146,
+          "topArena": "models",
+          "topCategory": "asciiart",
+          "topWinRate": 47.2,
+          "codeCategories": {
+            "elo": 1125,
+            "winRate": 44
+          }
+        }
+      }
+    },
+    {
+      "id": "qwen/qwen3-max-thinking",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3 Max Thinking",
+      "description": "Qwen3-Max-Thinking is the flagship reasoning model in the Qwen3 series, designed for high-stakes cognitive tasks that require deep, multi-step reasoning. By significantly scaling model capacity and reinforcement learning compute, it...",
+      "contextLength": 262144,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 7.8e-7,
+        "completion": 0.0000039
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": null,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3.7-flash",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.7 Flash",
+      "description": "Qwen3.7 Flash is a vision-language reasoning model from Alibaba. It is suited for multimodal agents, visual coding, search, and computer interaction, with strengths in object recognition, spatial understanding, and real-world...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 3e-8,
+        "completion": 1.3e-7
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3.7-max",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.7 Max",
+      "description": "Qwen3.7-Max is the flagship model in Alibaba's Qwen3.7 series. It supports text input and output and is designed for agent-centric workloads, with particular strengths in coding, office and productivity tasks,...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.000001475,
+        "completion": 0.000004425
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 29.9,
+          "coding": 66,
+          "agentic": 23.9
+        },
+        "designArena": {
+          "entries": 16,
+          "topElo": 1296,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 55.3,
+          "codeCategories": {
+            "elo": 1291,
+            "winRate": 54.9
+          }
+        }
+      }
+    },
+    {
+      "id": "qwen/qwen3.7-plus",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.7 Plus",
+      "description": "Qwen3.7-Plus is a cost-effective model in Alibaba's Qwen3.7 series. It supports text and image input with text output, building on the series' text capabilities with a comprehensive upgrade to its...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 3.2e-7,
+        "completion": 0.00000128
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 25.8,
+          "coding": 55.9,
+          "agentic": 19.7
+        },
+        "designArena": {
+          "entries": 8,
+          "topElo": 1297,
+          "topArena": "models",
+          "topCategory": "dataviz",
+          "topWinRate": 52.5,
+          "codeCategories": {
+            "elo": 1282,
+            "winRate": 50.6
+          }
+        }
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-2.4t-a95b",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.8 2.4T A95B",
+      "description": "Qwen3.8 2.4T A95B is an open-weight sparse mixture-of-experts model from Qwen and the open-weight variant of [Qwen3.8 Max](/qwen/qwen3.8-max), with 95 billion active parameters out of 2.4 trillion total. It is...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.000002,
+        "completion": 0.000006
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "xhigh",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "xhigh"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 40,
+          "coding": 71.9,
+          "agentic": 50.4
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-27b",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.8 27B",
+      "description": "Qwen3.8 27B is an open-weight dense vision-language model from Qwen. It is suited for coding, professional workflows, research, multimodal interaction, and long-running agent tasks, with flexible thinking that can be...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 2.14e-7,
+        "completion": 0.00000255
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "xhigh",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "xhigh"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 33.9,
+          "coding": 68.1,
+          "agentic": 46.5
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-27b:free",
+      "provider": "qwen",
+      "kind": "free",
+      "priority": false,
+      "aliasTarget": null,
+      "free": true,
+      "name": "Qwen: Qwen3.8 27B (free)",
+      "description": "Qwen3.8 27B is an open-weight dense vision-language model from Qwen. It is suited for coding, professional workflows, research, multimodal interaction, and long-running agent tasks, with flexible thinking that can be...",
+      "contextLength": 262144,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "xhigh",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "xhigh"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 33.9,
+          "coding": 68.1,
+          "agentic": 46.5
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-flash",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.8 Flash",
+      "description": "Qwen3.8 Flash is a multimodal reasoning model from Alibaba. It is suited for coding assistance, agentic workflows, visual understanding, document and codebase analysis, desktop interaction, chart analysis, and long-video analysis.",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 1.5e-7,
+        "completion": 4.7e-7
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": null,
+        "designArena": null
+      }
+    },
+    {
+      "id": "qwen/qwen3.8-max-0902",
+      "provider": "qwen",
+      "kind": "latest",
+      "priority": false,
+      "aliasTarget": null,
+      "free": false,
+      "name": "Qwen: Qwen3.8 Max (0902)",
+      "description": "Qwen3.8 Max 0902 is an updated snapshot of Qwen3.8 Max from Alibaba's Qwen team. It is a 2.4-trillion-parameter mixture-of-experts model that accepts text, image, and video input and returns text,...",
+      "contextLength": 1000000,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.000002,
+        "completion": 0.000006
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "xhigh",
+          "high",
+          "medium",
+          "low",
+          "minimal"
+        ],
+        "defaultEffort": "xhigh"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 45.4,
+          "coding": 76.2,
+          "agentic": 56.1
         },
         "designArena": null
       }
