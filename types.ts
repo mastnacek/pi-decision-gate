@@ -33,9 +33,24 @@ export interface JevAssessment {
   irreversibleProb: number;
   offTaskProb: number;
   confidence: number;
+  consequenceScore?: number; // 0 - 3 (blast radius)
+  taskFamily?: string; // routine-transformation, investigation, mutation, cleanup
+  recommendedEffort?: "low" | "medium" | "high";
+  isolatePaneScore?: number; // 0 - 3 (vhodnost pro oddělené okno/sub-pane)
+  shouldOffloadToPane?: boolean; // Zda je doporučeno delegovat do nového okna
+  offloadReason?: string;
   costUsd: number;
   costCzk?: number;
   modelUsed: string;
+  sanitized?: boolean; // Zda byl payload z bezpečnostních důvodů vyhodnocen lokálně
+}
+
+export interface HerdrPaneRecommendation {
+  suitable: boolean;
+  reason: string;
+  recommendedModel: string;
+  recommendedEffort: "low" | "medium" | "high";
+  agentKind: "pi" | "claude" | "cursor" | "codex" | "opencode";
 }
 
 export interface DecisionRecord {
@@ -48,7 +63,7 @@ export interface DecisionRecord {
   };
   tool: string;
   input: unknown;
-  verdict: "approved" | "edited" | "rejected" | "auto_approved";
+  verdict: "approved" | "edited" | "rejected" | "auto_approved" | "delegated_to_pane";
   assessment?: JevAssessment;
 }
 
@@ -74,6 +89,8 @@ export interface ModelSuitability {
   reason: string;
   turns: number;
   source: string;
+  cachePenalty?: boolean;
+  cacheNotice?: string;
 }
 
 export interface ThinkingRecommendation {

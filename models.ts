@@ -4,7 +4,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { JevAssessment, ModelSuitability, ModelUsageStat, ThinkingRecommendation } from "./types";
+import { isHerdrEnvironment } from "./herdr";
+import type { HerdrPaneRecommendation, JevAssessment, ModelSuitability, ModelUsageStat, ThinkingRecommendation } from "./types";
 
 const SESSIONS_DIR = join(homedir(), ".pi", "agent", "sessions");
 const SETTINGS_FILE = join(homedir(), ".pi", "agent", "settings.json");
@@ -305,10 +306,17 @@ export function evaluateModelSuitability(
 
   const isReadOnly = toolName === "read" || (toolName === "bash" && isSafeBashCommand(input));
 
+  // Zjištění stavu kontextového okna pro posouzení ztráty cache
+  const usage = ctx?.getContextUsage?.();
+  const contextTokens = usage?.tokens ?? 0;
+  const currentModelKey = ctx?.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+
   return models
     .map((m) => {
       let score = 80;
       let reason = "Osvědčený model";
+      let cachePenalty = false;
+      let cacheNotice: string | undefined;
       const id = m.id.toLowerCase();
 
       const isHeavyReasoning = /claude-3[.-]7|claude-3[.-]5-sonnet|o3|o1|r1|gemini-1\.5-pro|gemini-2\.5-pro|gpt-4o\b/.test(id);
@@ -353,6 +361,18 @@ export function evaluateModelSuitability(
       if (m.turns > 20) score = Math.min(99, score + 4);
       else if (m.turns > 5) score = Math.min(99, score + 2);
 
+      // Posouzení prompt cache: při velkém kontextu penalizovat přepnutí modelu
+      if (contextTokens > 25000 && !isDestructiveOrRisky) {
+        if (m.modelKey === currentModelKey) {
+          score = Math.min(99, score + 3);
+          cacheNotice = "✓ Zachová prompt cache";
+        } else {
+          score = Math.max(45, score - 12);
+          cachePenalty = true;
+          cacheNotice = `⚠️ Ztráta cache (~${Math.round(contextTokens / 1000)}k tok.)`;
+        }
+      }
+
       return {
         modelKey: m.modelKey,
         provider: m.provider,
@@ -361,7 +381,64 @@ export function evaluateModelSuitability(
         reason,
         turns: m.turns,
         source: m.source,
+        cachePenalty,
+        cacheNotice,
       };
     })
     .sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Zjistí, zda je příkaz dlouhotrvající, náročný na sestavení nebo vhodný pro oddělené okno
+ */
+export function isLongRunningOrAutonomousTask(toolName: string, input: unknown): boolean {
+  if (toolName === "bash") {
+    const cmd = typeof input === "object" && input !== null && "command" in input
+      ? String((input as { command?: unknown }).command ?? "").trim()
+      : "";
+    return /^(?:npm\s+(?:test|run|build|install)|cargo\s+(?:build|test|check)|pytest|python\s+.*test|docker|docker-compose|make|gradle|mvn|composer)\b/i.test(cmd);
+  }
+  return false;
+}
+
+/**
+ * Vyhodnotí, zda model a pravidla doporučují delegovat úlohu do nového Herdr okna
+ */
+export function getHerdrPaneRecommendation(
+  toolName: string,
+  input: unknown,
+  assessment: JevAssessment,
+  ctx?: ExtensionContext,
+): HerdrPaneRecommendation {
+  const herdrAvailable = isHerdrEnvironment();
+  const isLongRunning = isLongRunningOrAutonomousTask(toolName, input);
+  const jvWantsPane = Boolean(assessment.shouldOffloadToPane || (assessment.isolatePaneScore !== undefined && assessment.isolatePaneScore >= 2));
+  const isDestructive = assessment.riskCategory === "destructive";
+
+  const suitable = herdrAvailable && (jvWantsPane || isLongRunning || (isDestructive && assessment.consequenceScore !== undefined && assessment.consequenceScore >= 2));
+
+  // Zvolit nejvhodnější model pro izolovaný běh
+  const candidates = evaluateModelSuitability(toolName, input, assessment, ctx);
+  const top = candidates[0];
+  const recommendedModel = top ? top.modelKey : (ctx?.model ? `${ctx.model.provider}/${ctx.model.id}` : "google/gemini-3.8-flash");
+  const recommendedEffort = assessment.recommendedEffort ?? (isDestructive ? "high" : isLongRunning ? "medium" : "low");
+
+  let reason = "Triviální sekvenční krok — lépe ponechat v aktuálním okně.";
+  if (suitable) {
+    if (isDestructive) {
+      reason = "Kritická / destruktivní akce. Doporučeno oddělit do izolovaného okna pro bezpečnost.";
+    } else if (isLongRunning) {
+      reason = "Dlouhotrvající sestavení / test. Běh v novém okně neblokuje hlavní relaci.";
+    } else if (jvWantsPane) {
+      reason = assessment.offloadReason ?? "Sémanticky samostatný úkol vhodný pro sub-agenta.";
+    }
+  }
+
+  return {
+    suitable,
+    reason,
+    recommendedModel,
+    recommendedEffort,
+    agentKind: "pi",
+  };
 }

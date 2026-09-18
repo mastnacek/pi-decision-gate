@@ -6,7 +6,8 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { fmtSmallAmount } from "./balance";
 import { state } from "./config";
 import { assessActionWithJev, matchesDestructivePattern } from "./jev";
-import { evaluateModelSuitability, getThinkingRecommendation } from "./models";
+import { evaluateModelSuitability, getHerdrPaneRecommendation, getThinkingRecommendation } from "./models";
+import { isHerdrEnvironment, promptHerdrAgent, splitHerdrPane, startHerdrAgent } from "./herdr";
 import {
   ANSI_BOLD,
   ANSI_RESET,
@@ -130,9 +131,15 @@ export async function handleToolCallGate(
     : `$${fmtSmallAmount(assessment.costUsd)}`;
 
   const thinkingRec = getThinkingRecommendation(event.toolName, event.input, assessment, ctx.thinkingLevel);
-  const hintLine = thinkingRec.canOptimize
-    ? `${paint(ELDRITCH_YELLOW, "💡 Doporučení:")} ${paint(ELDRITCH_TEXT, thinkingRec.reason)}`
-    : "";
+  const herdrRec = getHerdrPaneRecommendation(event.toolName, event.input, assessment, ctx);
+
+  const hints: string[] = [];
+  if (thinkingRec.canOptimize) {
+    hints.push(`${paint(ELDRITCH_YELLOW, "💡 Doporučení:")} ${paint(ELDRITCH_TEXT, thinkingRec.reason)}`);
+  }
+  if (herdrRec.suitable) {
+    hints.push(`${paint(ELDRITCH_CYAN, "🪟 Herdr:")} ${paint(ELDRITCH_TEXT, herdrRec.reason)}`);
+  }
 
   const header = [
     `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🛡️  Rozhodnutí modelu vyžaduje schválení${ANSI_RESET}`,
@@ -140,7 +147,7 @@ export async function handleToolCallGate(
     `${paint(ELDRITCH_GRAY, "Navrhl model:  ")}${paint(ELDRITCH_PURPLE, modelLabel)}${paint(ELDRITCH_DIM, thinking)}`,
     `${paint(ELDRITCH_GRAY, "Nástroj:       ")}${paint(ANSI_BOLD + ELDRITCH_CYAN, event.toolName)}`,
     `${paint(ELDRITCH_GRAY, "Posouzení Jev: ")}${paint(riskColor, `Riziko ${assessment.riskScore.toFixed(2)}/2.0 (${assessment.riskCategory})`)}${paint(ELDRITCH_DIM, " │ ")}${paint(ELDRITCH_GRAY, "Nevratnost: ")}${paint(ELDRITCH_TEXT, `${Math.round(assessment.irreversibleProb * 100)}%`)}${paint(ELDRITCH_DIM, " │ ")}${paint(ELDRITCH_GRAY, "Náklad: ")}${paint(ELDRITCH_ORANGE, costInfo)}`,
-    ...(hintLine ? [hintLine] : []),
+    ...hints,
     "",
     `${ANSI_BOLD}${ELDRITCH_PURPLE}Navrhované argumenty:${ANSI_RESET}`,
     preview,
@@ -153,6 +160,19 @@ export async function handleToolCallGate(
   const quickThinkingOption = `Schválit + thinking [${thinkingRec.recommendedLevel}]`;
   if (pi && thinkingRec.canOptimize) {
     options.push(quickThinkingOption);
+  }
+
+  let herdrPaneOption: string | undefined;
+  if (isHerdrEnvironment()) {
+    if (herdrRec.suitable) {
+      herdrPaneOption = `🪟 Spustit v novém okně [doporučeno: ${herdrRec.recommendedModel} · ${herdrRec.recommendedEffort}]`;
+    } else {
+      herdrPaneOption = "🪟 Spustit v novém okně (Herdr pane)";
+    }
+  }
+
+  if (herdrPaneOption) {
+    options.push(herdrPaneOption);
   }
 
   const switchModelOption = "Přepnout model a zopakovat tah";
@@ -196,6 +216,71 @@ export async function handleToolCallGate(
     return undefined;
   }
 
+  if (herdrPaneOption && choice === herdrPaneOption) {
+    const rawCommand =
+      event.toolName === "bash" && typeof event.input === "object" && event.input !== null && "command" in event.input
+        ? String((event.input as { command?: unknown }).command ?? "")
+        : undefined;
+
+    const taskPrompt = rawCommand
+      ? `Execute and verify command: ${rawCommand}`
+      : `Execute tool '${event.toolName}' with arguments:\n${rawPreview}`;
+
+    ctx.ui.notify("Rozděluji okno v Herdr...", "info");
+    const split = await splitHerdrPane({ direction: "right", cwd: ctx.cwd });
+    if (!split.ok || !split.paneId) {
+      ctx.ui.notify(`Rozdělení okna selhalo: ${split.error ?? "neznámá chyba"}`, "error");
+      return handleToolCallGate(event, ctx, pi);
+    }
+
+    const paneId = split.paneId;
+    const agentName = `sub-${Math.random().toString(36).slice(2, 7)}`;
+    ctx.ui.notify(`Vytvořen pane [${paneId}]. Spouštím sub-agenta (${herdrRec.recommendedModel})...`, "info");
+
+    const started = await startHerdrAgent({
+      name: agentName,
+      kind: herdrRec.agentKind,
+      paneId,
+      model: herdrRec.recommendedModel,
+      thinking: herdrRec.recommendedEffort,
+      theme: "eldritch",
+    });
+
+    if (!started.ok) {
+      ctx.ui.notify(`Spuštění agenta v pane [${paneId}] selhalo: ${started.error}`, "error");
+      return handleToolCallGate(event, ctx, pi);
+    }
+
+    // Odeslat prompt do nového agenta (asynchronně, aby neblokoval hlavní session)
+    void promptHerdrAgent({
+      target: agentName,
+      promptText: taskPrompt,
+      wait: false,
+    });
+
+    ctx.ui.notify(`Sub-agent [${agentName}] spuštěn v okně [${paneId}]. Hlavní relace pokračuje.`, "info");
+
+    state.approvedCount += 1;
+    logDecision(
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        timestamp: new Date().toISOString(),
+        model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
+        tool: event.toolName,
+        input: event.input,
+        verdict: "delegated_to_pane",
+        assessment,
+      },
+      ctx.cwd,
+    );
+    updateStatusline(ctx);
+
+    return {
+      block: true,
+      reason: `Akce byla delegována do samostatného okna Herdr (pane: ${paneId}, agent: ${agentName}, model: ${herdrRec.recommendedModel}). Původní lokální volání nástroje bylo zrušeno.`,
+    };
+  }
+
   if (choice === switchModelOption) {
     const candidates = evaluateModelSuitability(event.toolName, event.input, assessment, ctx);
     const topCandidates = candidates.slice(0, 8);
@@ -209,7 +294,8 @@ export async function handleToolCallGate(
     const modelOptions = topCandidates.map((c) => {
       const isCurrent = c.modelKey === `${modelProvider}/${modelId}`;
       const prefix = isCurrent ? "● " : "  ";
-      return `${prefix}${c.modelKey} │ ${c.score}% — ${c.reason}`;
+      const cacheBadge = c.cacheNotice ? ` (${c.cacheNotice})` : "";
+      return `${prefix}${c.modelKey} │ ${c.score}% — ${c.reason}${cacheBadge}`;
     });
     modelOptions.push("← Zpět do schvalování");
 
