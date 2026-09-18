@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-09-18T11:57:09.451Z",
+  "lastUpdated": "2026-09-18T13:35:52.473Z",
   "records": [
     {
       "id": "ADR-001",
@@ -32,6 +32,22 @@
       "date": "2026-09-18 13:57:09",
       "file": "2026-09-18-ADR-004-2-primrn-anglitina-pokud-je-architecturemd-v-etin-.md",
       "constraint": "2. Primárně angličtina — pokud je architecture.md v češtině, přesnost: > ## Documentation Index > Fetch the complete documentation index at: https://docs.typesafe.ai/llms.txt > Use this file to discover all available pages before exploring further.",
+      "status": "active"
+    },
+    {
+      "id": "ADR-005",
+      "title": "cff6479 feat: adopt agent-router architecture with Jev pane isolation,",
+      "date": "2026-09-18 14:58:18",
+      "file": "2026-09-18-ADR-005-cff6479-feat-adopt-agent-router-architecture-with-.md",
+      "constraint": "cff6479 feat: adopt agent-router architecture with Jev pane isolation,: /\\n\\texecute(\\n\\t\\ttoolCallId: string,\\n\\t\\tparams: Static<TParams>,\\n\\t\\tsignal: AbortSignal | undefined,\\n\\t\\tonUpdate: AgentToolUpdateCallback<TDetails> | undefined,\\n\\t\\tctx: ExtensionContext,\\n\\t",
+      "status": "active"
+    },
+    {
+      "id": "ADR-006",
+      "title": "ADR-005: cff6479 feat: adopt agent-router architecture with Jev pane i",
+      "date": "2026-09-18 15:35:52",
+      "file": "2026-09-18-ADR-006-adr-005-cff6479-feat-adopt-agent-router-architectu.md",
+      "constraint": "ADR-005: cff6479 feat: adopt agent-router architecture with Jev pane i: /\\n\\texecute(\\n\\t\\ttoolCallId: string,\\n\\t\\tparams: Static<TParams>,\\n\\t\\tsignal: AbortSignal | undefined,\\n\\t\\tonUpdate: AgentToolUpdateCallback<TDetails> | undefined,\\n\\t\\tctx: ExtensionContext,\\n\\t",
       "status": "active"
     }
   ]
