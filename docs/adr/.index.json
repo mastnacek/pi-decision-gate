@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "lastUpdated": "2026-09-18T13:35:52.473Z",
+  "lastUpdated": "2026-09-18T13:37:40.763Z",
   "records": [
     {
       "id": "ADR-001",
@@ -48,6 +48,14 @@
       "date": "2026-09-18 15:35:52",
       "file": "2026-09-18-ADR-006-adr-005-cff6479-feat-adopt-agent-router-architectu.md",
       "constraint": "ADR-005: cff6479 feat: adopt agent-router architecture with Jev pane i: /\\n\\texecute(\\n\\t\\ttoolCallId: string,\\n\\t\\tparams: Static<TParams>,\\n\\t\\tsignal: AbortSignal | undefined,\\n\\t\\tonUpdate: AgentToolUpdateCallback<TDetails> | undefined,\\n\\t\\tctx: ExtensionContext,\\n\\t",
+      "status": "active"
+    },
+    {
+      "id": "ADR-007",
+      "title": "ADR-006: ADR-005: cff6479 feat: adopt agent-router architecture with J",
+      "date": "2026-09-18 15:37:40",
+      "file": "2026-09-18-ADR-007-adr-006-adr-005-cff6479-feat-adopt-agent-router-ar.md",
+      "constraint": "ADR-006: ADR-005: cff6479 feat: adopt agent-router architecture with J: /\\n\\texecute(\\n\\t\\ttoolCallId: string,\\n\\t\\tparams: Static<TParams>,\\n\\t\\tsignal: AbortSignal | undefined,\\n\\t\\tonUpdate: AgentToolUpdateCallback<TDetails> | undefined,\\n\\t\\tctx: ExtensionContext,\\n\\t",
       "status": "active"
     }
   ]
