@@ -1,5 +1,9 @@
 // index.ts — vstupní bod rozšíření pi-decision-gate
 
+import { spawn } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
 import type {
   ExtensionAPI,
   ExtensionCommandContext,
@@ -32,11 +36,30 @@ import {
 } from "./status";
 import type { ApprovalMode } from "./types";
 
+// Cesta ke skriptu, který osvěží katalog modelů z OpenRouteru
+const MODELS_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "scripts", "fetch-models.mjs");
+
+/**
+ * Spustí asynchronně skript pro osvěžení models.json (neblokuje sezení).
+ */
+function refreshModelCatalog(): void {
+  try {
+    const child = spawn(process.execPath, [MODELS_SCRIPT], { stdio: "ignore" });
+    child.on("error", () => {
+      // Chyba spuštění skriptu nesmí ovlivnit sezení.
+    });
+  } catch {
+    // ignorujeme
+  }
+}
+
 export default function (pi: ExtensionAPI): void {
   // 1. Inicializace při startu sezení
   pi.on("session_start", async (_event, ctx: ExtensionContext) => {
     loadConfig(ctx.cwd);
     updateStatusline(ctx);
+    // Osvěží models.json z OpenRouteru na pozadí (neblokuje)
+    refreshModelCatalog();
     // Asynchronní načtení kurzu ČNB a zůstatku OpenRouteru
     await refreshStatuslineAsync(ctx);
   });

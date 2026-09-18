@@ -1,0 +1,124 @@
+#!/usr/bin/env node
+// fetch-models.mjs — refresh models.json from the OpenRouter catalog.
+// Providers: google, z-ai, moonshotai, deepseek.
+// Captures: ~...-latest router slugs + :free variants, with reasoning/thinking info,
+// description, and benchmark indices resolved from the alias target.
+// Usage:  node scripts/fetch-models.mjs [--out <path>]
+
+import { writeFileSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const API_URL = "https://openrouter.ai/api/v1/models";
+const PROVIDERS = ["google", "z-ai", "moonshotai", "deepseek"];
+const DEFAULT_OUT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "models.json");
+
+function providerOf(id) {
+  return id.replace(/^~/, "").split("/")[0];
+}
+
+function summarizeDesignArena(entries) {
+  if (!Array.isArray(entries) || entries.length === 0) return null;
+  let top = entries[0];
+  for (const e of entries) {
+    if ((e.elo ?? -1) > (top.elo ?? -1)) top = e;
+  }
+  const code = entries.find((e) => e.category === "codecategories");
+  return {
+    entries: entries.length,
+    topElo: top.elo ?? null,
+    topArena: top.arena ?? null,
+    topCategory: top.category ?? null,
+    topWinRate: top.win_rate ?? null,
+    codeCategories: code
+      ? { elo: code.elo ?? null, winRate: code.win_rate ?? null }
+      : null,
+  };
+}
+
+function benchmarkInfo(m) {
+  const aa = m.benchmarks?.artificial_analysis;
+  const da = m.benchmarks?.design_arena;
+  return {
+    artificialAnalysis: aa
+      ? {
+          intelligence: aa.intelligence_index ?? null,
+          coding: aa.coding_index ?? null,
+          agentic: aa.agentic_index ?? null,
+        }
+      : null,
+    designArena: summarizeDesignArena(da),
+  };
+}
+
+/**
+ * Build one catalog entry. For `~...-latest` aliases the descriptive data
+ * (name, description, reasoning, benchmarks, context) is resolved from the
+ * concrete target model named by alias_target.slug.
+ */
+function build(id, m, byId) {
+  const free = id.includes(":free");
+  const targetSlug = m.alias_target?.slug;
+  const src = targetSlug ? byId.get(targetSlug) ?? m : m;
+  const reasoning = src.reasoning ?? {};
+  return {
+    id,
+    provider: providerOf(id),
+    kind: free ? "free" : "latest",
+    aliasTarget: targetSlug ?? null,
+    free,
+    name: src.name ?? null,
+    description: src.description ?? null,
+    contextLength: src.context_length ?? null,
+    inputModalities: src.architecture?.input_modalities ?? [],
+    knowledgeCutoff: src.knowledge_cutoff ?? null,
+    pricing: {
+      prompt: Number(src.pricing?.prompt ?? 0),
+      completion: Number(src.pricing?.completion ?? 0),
+    },
+    reasoning: {
+      mandatory: reasoning.mandatory ?? null,
+      defaultEnabled: reasoning.default_enabled ?? null,
+      supportedEfforts: reasoning.supported_efforts ?? [],
+      defaultEffort: reasoning.default_effort ?? null,
+    },
+    benchmarks: benchmarkInfo(src),
+  };
+}
+
+async function main() {
+  const outIdx = process.argv.indexOf("--out");
+  const out = outIdx !== -1 ? process.argv[outIdx + 1] : DEFAULT_OUT;
+
+  const res = await fetch(API_URL);
+  if (!res.ok) {
+    console.error(`fetch-models: OpenRouter API returned ${res.status}`);
+    process.exit(1);
+  }
+  const payload = await res.json();
+  const all = payload.data ?? [];
+  const byId = new Map(all.map((m) => [m.id, m]));
+
+  const selected = all.filter((m) => {
+    const p = providerOf(m.id);
+    if (!PROVIDERS.includes(p)) return false;
+    return m.id.includes(":free") || /-latest$/.test(m.id);
+  });
+
+  const models = selected.map((m) => build(m.id, m, byId));
+  const doc = {
+    generatedAt: new Date().toISOString(),
+    source: API_URL,
+    providers: PROVIDERS,
+    models,
+  };
+
+  mkdirSync(dirname(out), { recursive: true });
+  writeFileSync(out, JSON.stringify(doc, null, 2) + "\n", "utf8");
+  console.log(`fetch-models: wrote ${models.length} models to ${out}`);
+}
+
+main().catch((err) => {
+  console.error("fetch-models:", err?.message ?? err);
+  process.exit(1);
+});

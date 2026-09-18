@@ -6,7 +6,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { fmtSmallAmount } from "./balance";
 import { state } from "./config";
 import { assessActionWithJev, matchesDestructivePattern } from "./jev";
-import { evaluateModelSuitability, getHerdrPaneRecommendation, getThinkingRecommendation } from "./models";
+import { getHerdrPaneRecommendation, getThinkingRecommendation, recommendModelsForAction } from "./models";
 import { isHerdrEnvironment, promptHerdrAgent, splitHerdrPane, startHerdrAgent } from "./herdr";
 import {
   ANSI_BOLD,
@@ -282,18 +282,22 @@ export async function handleToolCallGate(
   }
 
   if (choice === switchModelOption) {
-    const candidates = evaluateModelSuitability(event.toolName, event.input, assessment, ctx);
+    const candidates = await recommendModelsForAction(event.toolName, event.input, assessment, ctx);
     const topCandidates = candidates.slice(0, 8);
 
+    const hasLowConfidence = topCandidates.some((c) => c.recommended);
     const modelHeader = [
-      `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🔄  Výběr modelu pro pokračování (dle vhodnosti & četnosti)${ANSI_RESET}`,
+      `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🔄  Výběr modelu pro pokračování (dle Jev hodnocení & četnosti)${ANSI_RESET}`,
       paint(ELDRITCH_DIM, "─".repeat(58)),
       paint(ELDRITCH_GRAY, "Zvolte model, který převezme tento tah:"),
+      ...(hasLowConfidence
+        ? [paint(ELDRITCH_YELLOW, "⚠️  Nízká konfidence Jev — doporučené modely označeny ★")]
+        : []),
     ].join("\n");
 
     const modelOptions = topCandidates.map((c) => {
       const isCurrent = c.modelKey === `${modelProvider}/${modelId}`;
-      const prefix = isCurrent ? "● " : "  ";
+      const prefix = c.recommended ? "★ " : isCurrent ? "● " : "  ";
       const cacheBadge = c.cacheNotice ? ` (${c.cacheNotice})` : "";
       return `${prefix}${c.modelKey} │ ${c.score}% — ${c.reason}${cacheBadge}`;
     });

@@ -6,6 +6,9 @@ import { homedir } from "node:os";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { isHerdrEnvironment } from "./herdr";
 import type { HerdrPaneRecommendation, JevAssessment, ModelSuitability, ModelUsageStat, ThinkingRecommendation } from "./types";
+import { findCatalogEntry } from "./catalog";
+import { state } from "./config";
+import { rankModelsWithJev, type JevRankCandidate } from "./jev";
 
 const SESSIONS_DIR = join(homedir(), ".pi", "agent", "sessions");
 const SETTINGS_FILE = join(homedir(), ".pi", "agent", "settings.json");
@@ -441,4 +444,76 @@ export function getHerdrPaneRecommendation(
     recommendedEffort,
     agentKind: "pi",
   };
+}
+
+/**
+ * Sestaví krátký popis úkolu pro Jev ranking.
+ */
+function buildTaskDescription(toolName: string, input: unknown): string {
+  const serialized =
+    typeof input === "object" && input !== null
+      ? JSON.stringify(input)
+      : String(input ?? "");
+  return `Tool: ${toolName}. Input: ${serialized.slice(0, 300)}`;
+}
+
+/**
+ * Doporučí modely pro danou akci: primárně přes Jev ranking
+ * (katalog models.json + benchmarky), s fallbackem na heuristiku při výpadku.
+ */
+export async function recommendModelsForAction(
+  toolName: string,
+  input: unknown,
+  assessment: JevAssessment,
+  ctx?: ExtensionContext,
+): Promise<ModelSuitability[]> {
+  const heuristic = evaluateModelSuitability(toolName, input, assessment, ctx);
+  if (!state.config.useJev) return heuristic;
+
+  const candidates: JevRankCandidate[] = heuristic.slice(0, 12).map((h) => {
+    const cat = findCatalogEntry(h.modelKey);
+    return {
+      id: h.modelKey,
+      name: cat?.name ?? h.modelKey,
+      description: cat?.description,
+      indices: cat?.benchmarks?.artificialAnalysis ?? null,
+      codeElo: cat?.benchmarks?.designArena?.codeCategories?.elo ?? null,
+      codeWinRate: cat?.benchmarks?.designArena?.codeCategories?.winRate ?? null,
+      reasoningEfforts: cat?.reasoning?.supportedEfforts,
+      pricing: cat?.pricing,
+      contextLength: cat?.contextLength,
+      free: cat?.free,
+    };
+  });
+
+  const task = buildTaskDescription(toolName, input);
+  const ranking = await rankModelsWithJev(candidates, task, ctx);
+  if (!ranking) return heuristic;
+
+  const scored = heuristic
+    .map((h) => {
+      const prob = ranking.probabilities[h.modelKey];
+      if (typeof prob === "number") {
+        return {
+          ...h,
+          score: Math.max(1, Math.round(prob * 100)),
+          reason: `Jev: ${Math.round(prob * 100)} % vhodnost (${h.reason})`,
+        };
+      }
+      return { ...h, score: 0, reason: "Jev model nevyhodnotil" };
+    })
+    .sort((a, b) => b.score - a.score);
+
+  // Pravidlo konfidence (dle agent-router): při závažném důsledku a nízké
+  // konfidenci Jev explicitně zvýrazni top-2 kandidáty.
+  const consequence =
+    assessment.consequenceScore ?? (assessment.riskCategory === "destructive" ? 3 : 0);
+  const lowConfidence = consequence >= 2 && ranking.confidence < 0.75;
+  if (lowConfidence && scored.length >= 2) {
+    for (const m of scored.slice(0, 2)) {
+      m.recommended = true;
+    }
+  }
+
+  return scored;
 }

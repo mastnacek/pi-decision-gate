@@ -250,3 +250,133 @@ export async function assessActionWithJev(
     return fallbackAssessment;
   }
 }
+
+/** Kandidát modelu pro Jev ranking (fakta z katalogu models.json). */
+export interface JevRankCandidate {
+  id: string;
+  name?: string | null;
+  description?: string | null;
+  indices?: {
+    intelligence?: number | null;
+    coding?: number | null;
+    agentic?: number | null;
+  } | null;
+  /** Elo z Design Arena kategorie "codecategories". */
+  codeElo?: number | null;
+  codeWinRate?: number | null;
+  reasoningEfforts?: string[];
+  pricing?: { prompt: number; completion: number };
+  contextLength?: number | null;
+  free?: boolean;
+}
+
+export interface JevRankingResult {
+  choice: string;
+  probabilities: Record<string, number>;
+  confidence: number;
+  modelUsed: string;
+  costUsd: number;
+}
+
+/**
+ * Nechá Jev seřadit kandidátské modely pro daný úkol.
+ * Pošle Choice otázku nad opaque IDs (m0, m1, …) s fakty kandidátů ve state.
+ */
+export async function rankModelsWithJev(
+  candidates: JevRankCandidate[],
+  taskDescription: string,
+  ctx?: ExtensionContext,
+): Promise<JevRankingResult | undefined> {
+  if (candidates.length === 0) return undefined;
+
+  // Bezpečnostní pojistka: neodesílat citlivá data na externí API
+  if (containsSensitiveData({ task: taskDescription, candidates })) {
+    return undefined;
+  }
+
+  const apiKey = await getOpenRouterApiKey(ctx);
+  if (!apiKey) return undefined;
+
+  const criteria: Record<string, unknown> = {};
+  const idByOpaque = new Map<string, string>();
+  candidates.forEach((c, i) => {
+    const opaque = `m${i}`;
+    idByOpaque.set(opaque, c.id);
+    criteria[opaque] = {
+      name: c.name,
+      description: c.description,
+      indices: c.indices,
+      codeElo: c.codeElo,
+      codeWinRate: c.codeWinRate,
+      reasoningEfforts: c.reasoningEfforts,
+      pricing: c.pricing,
+      contextLength: c.contextLength,
+      free: c.free,
+    };
+  });
+
+  const payload = {
+    model: state.config.jevModel || "~typesafe/jev-latest",
+    state: {
+      task: taskDescription,
+      candidates: criteria,
+    },
+    questions: {
+      route: {
+        type: "choice",
+        instructions:
+          "Which candidate model is the best quality/cost fit for this task? Choose only from the supplied candidate IDs (m0, m1, …).",
+        criteria,
+      },
+    },
+  };
+
+  try {
+    const res = await fetch(OPENROUTER_DECISIONS_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: ctx?.signal,
+    });
+
+    if (!res.ok) return undefined;
+
+    const data = (await res.json()) as {
+      model?: string;
+      answers?: {
+        route?: {
+          choice?: string;
+          confidence?: number;
+          probabilities?: Record<string, number>;
+        };
+      };
+      usage?: { input_tokens?: number; output_tokens?: number; cost?: number };
+    };
+
+    const answer = data.answers?.route;
+    if (!answer?.choice) return undefined;
+
+    const costUsd =
+      data.usage?.cost ?? (data.usage?.input_tokens ?? 0) * (0.042 / 1_000_000);
+    state.sessionCostUsd += costUsd;
+
+    const probabilities: Record<string, number> = {};
+    for (const [key, value] of Object.entries(answer.probabilities ?? {})) {
+      probabilities[idByOpaque.get(key) ?? key] = value;
+    }
+
+    return {
+      choice: idByOpaque.get(answer.choice) ?? answer.choice,
+      probabilities,
+      confidence: answer.confidence ?? 0.8,
+      modelUsed: data.model ?? state.config.jevModel,
+      costUsd,
+    };
+  } catch {
+    // Výpadek sítě / timeoutu — volající použije fallback
+    return undefined;
+  }
+}

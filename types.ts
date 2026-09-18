@@ -91,6 +91,8 @@ export interface ModelSuitability {
   source: string;
   cachePenalty?: boolean;
   cacheNotice?: string;
+  /** True = doporučený při nízké konfidenci Jev (top-2). */
+  recommended?: boolean;
 }
 
 export interface ThinkingRecommendation {

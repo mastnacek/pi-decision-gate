@@ -1,0 +1,532 @@
+{
+  "generatedAt": "2026-09-18T12:50:46.670Z",
+  "source": "https://openrouter.ai/api/v1/models",
+  "providers": [
+    "google",
+    "z-ai",
+    "moonshotai",
+    "deepseek"
+  ],
+  "models": [
+    {
+      "id": "~deepseek/deepseek-pro-latest",
+      "provider": "deepseek",
+      "kind": "latest",
+      "aliasTarget": "deepseek/deepseek-v4-pro-0813",
+      "free": false,
+      "name": "DeepSeek: DeepSeek V4 Pro 0813",
+      "description": "DeepSeek V4 Pro 0813 is a large-scale mixture-of-experts model from DeepSeek. This is the GA release of DeepSeek V4 Pro.",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 6.6e-7,
+        "completion": 0.00000198
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": null,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 36.3,
+          "coding": 68.8,
+          "agentic": 42.3
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "~deepseek/deepseek-flash-latest",
+      "provider": "deepseek",
+      "kind": "latest",
+      "aliasTarget": "deepseek/deepseek-v4.1-flash",
+      "free": false,
+      "name": "DeepSeek: DeepSeek V4.1 Flash",
+      "description": "DeepSeek V4.1 Flash is a sparse mixture-of-experts model from DeepSeek, and the first built on the company's Causal Encoder-Decoder (CED) architecture. It activates 8B parameters on input and 16B on...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 1.5e-7,
+        "completion": 6e-7
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 39.5,
+          "coding": null,
+          "agentic": null
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "~z-ai/glm-flash-latest",
+      "provider": "z-ai",
+      "kind": "latest",
+      "aliasTarget": "z-ai/glm-5.3-flash",
+      "free": false,
+      "name": "Z.ai: GLM 5.3 Flash",
+      "description": "GLM-5.3-Flash is a native multimodal model from Z.ai. It is suited for efficient coding and long-horizon agent tasks. Its hybrid sparse and linear attention architecture maintains accurate long-context behavior while...",
+      "contextLength": 1310720,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 9e-8,
+        "completion": 3e-7
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "max"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 41.9,
+          "coding": 71.5,
+          "agentic": 51.2
+        },
+        "designArena": {
+          "entries": 8,
+          "topElo": 1354,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 59.3,
+          "codeCategories": {
+            "elo": 1299,
+            "winRate": 49.7
+          }
+        }
+      }
+    },
+    {
+      "id": "~z-ai/glm-latest",
+      "provider": "z-ai",
+      "kind": "latest",
+      "aliasTarget": "z-ai/glm-5.3",
+      "free": false,
+      "name": "Z.ai: GLM 5.3",
+      "description": "GLM-5.3 is a large-scale reasoning model from Z.ai, built for complex software engineering and long-horizon agent tasks. It supports text input and output with a 1M-token context window, and improves...",
+      "contextLength": 1310720,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.0000014,
+        "completion": 0.0000044
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "max"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 44.9,
+          "coding": 74.8,
+          "agentic": 53.4
+        },
+        "designArena": {
+          "entries": 11,
+          "topElo": 1389,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 67.1,
+          "codeCategories": {
+            "elo": 1330,
+            "winRate": 57.6
+          }
+        }
+      }
+    },
+    {
+      "id": "~deepseek/deepseek-v4-flash-latest",
+      "provider": "deepseek",
+      "kind": "latest",
+      "aliasTarget": "deepseek/deepseek-v4-flash-0731",
+      "free": false,
+      "name": "DeepSeek: DeepSeek V4 Flash 0731",
+      "description": "DeepSeek V4 Flash 0731 is a sparse mixture-of-experts model from DeepSeek, with 13B active parameters out of 284B total. This re-post-trained revision is suited for coding, reasoning, and agent workflows....",
+      "contextLength": 1310720,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 6e-8,
+        "completion": 1.2e-7
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 34.5,
+          "coding": 69.1,
+          "agentic": 41.7
+        },
+        "designArena": {
+          "entries": 8,
+          "topElo": 1252,
+          "topArena": "models",
+          "topCategory": "uicomponent",
+          "topWinRate": 47,
+          "codeCategories": {
+            "elo": 1245,
+            "winRate": 46.5
+          }
+        }
+      }
+    },
+    {
+      "id": "deepseek/deepseek-v4-flash-0731:free",
+      "provider": "deepseek",
+      "kind": "free",
+      "aliasTarget": null,
+      "free": true,
+      "name": "DeepSeek: DeepSeek V4 Flash 0731 (free)",
+      "description": "DeepSeek V4 Flash 0731 is a sparse mixture-of-experts model from DeepSeek, with 13B active parameters out of 284B total. This re-post-trained revision is suited for coding, reasoning, and agent workflows....",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 34.5,
+          "coding": 69.1,
+          "agentic": 41.7
+        },
+        "designArena": {
+          "entries": 8,
+          "topElo": 1252,
+          "topArena": "models",
+          "topCategory": "uicomponent",
+          "topWinRate": 47,
+          "codeCategories": {
+            "elo": 1245,
+            "winRate": 46.5
+          }
+        }
+      }
+    },
+    {
+      "id": "z-ai/glm-5.2:free",
+      "provider": "z-ai",
+      "kind": "free",
+      "aliasTarget": null,
+      "free": true,
+      "name": "Z.ai: GLM 5.2 (free)",
+      "description": "GLM 5.2 is a large-scale reasoning model from Z.ai. It supports text input and output with a 1M-token context window, and is suited for long-horizon agent workflows, project-level software engineering,...",
+      "contextLength": 32768,
+      "inputModalities": [
+        "text"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "xhigh",
+          "high"
+        ],
+        "defaultEffort": "high"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 34,
+          "coding": 68.8,
+          "agentic": 39.4
+        },
+        "designArena": {
+          "entries": 16,
+          "topElo": 1321,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 53.9,
+          "codeCategories": {
+            "elo": 1308,
+            "winRate": 53
+          }
+        }
+      }
+    },
+    {
+      "id": "~google/gemini-pro-latest",
+      "provider": "google",
+      "kind": "latest",
+      "aliasTarget": "google/gemini-3.1-pro-preview",
+      "free": false,
+      "name": "Google: Gemini 3.1 Pro Preview",
+      "description": "Gemini 3.1 Pro Preview is Google’s frontier reasoning model, delivering enhanced software engineering performance, improved agentic reliability, and more efficient token usage across complex workflows. Building on the multimodal foundation...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "audio",
+        "file",
+        "image",
+        "text",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.000002,
+        "completion": 0.000012
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": null,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 30.4,
+          "coding": 68.8,
+          "agentic": 10.3
+        },
+        "designArena": {
+          "entries": 21,
+          "topElo": 1309,
+          "topArena": "models",
+          "topCategory": "svg",
+          "topWinRate": 67.8,
+          "codeCategories": {
+            "elo": 1259,
+            "winRate": 64.4
+          }
+        }
+      }
+    },
+    {
+      "id": "~moonshotai/kimi-latest",
+      "provider": "moonshotai",
+      "kind": "latest",
+      "aliasTarget": "moonshotai/kimi-k3",
+      "free": false,
+      "name": "MoonshotAI: Kimi K3",
+      "description": "Kimi K3 is a 2.8T parameter open-weight multimodal reasoning model from Moonshot AI. It is suited for complex coding, knowledge work, and long-horizon agentic workflows, and is particularly strong at...",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0.0000021,
+        "completion": 0.00001095
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "max",
+          "high",
+          "low"
+        ],
+        "defaultEffort": "max"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 43.8,
+          "coding": 76.2,
+          "agentic": 50.6
+        },
+        "designArena": {
+          "entries": 15,
+          "topElo": 1425,
+          "topArena": "models",
+          "topCategory": "3d",
+          "topWinRate": 68.8,
+          "codeCategories": {
+            "elo": 1387,
+            "winRate": 64.6
+          }
+        }
+      }
+    },
+    {
+      "id": "~google/gemini-flash-latest",
+      "provider": "google",
+      "kind": "latest",
+      "aliasTarget": "google/gemini-3.8-flash",
+      "free": false,
+      "name": "Google: Gemini 3.8 Flash",
+      "description": "Gemini 3.8 Flash is Google's most intelligent Flash model with significant gains from 3.7 Flash across software engineering, agentic tasks, and multi-step reasoning.",
+      "contextLength": 1048576,
+      "inputModalities": [
+        "text",
+        "image",
+        "video",
+        "file",
+        "audio"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 7.5e-7,
+        "completion": 0.00000375
+      },
+      "reasoning": {
+        "mandatory": true,
+        "defaultEnabled": true,
+        "supportedEfforts": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "defaultEffort": "medium"
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 41.2,
+          "coding": 76.3,
+          "agentic": 41.1
+        },
+        "designArena": {
+          "entries": 10,
+          "topElo": 1339,
+          "topArena": "models",
+          "topCategory": "gamedev",
+          "topWinRate": 54,
+          "codeCategories": {
+            "elo": 1324,
+            "winRate": 53
+          }
+        }
+      }
+    },
+    {
+      "id": "google/gemma-4-26b-a4b-it:free",
+      "provider": "google",
+      "kind": "free",
+      "aliasTarget": null,
+      "free": true,
+      "name": "Google: Gemma 4 26B A4B  (free)",
+      "description": "Gemma 4 26B A4B IT is an instruction-tuned Mixture-of-Experts (MoE) model from Google DeepMind. Despite 25.2B total parameters, only 3.8B activate per token during inference — delivering near-31B quality at...",
+      "contextLength": 262144,
+      "inputModalities": [
+        "image",
+        "text",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": false,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": null,
+          "coding": 39.3,
+          "agentic": null
+        },
+        "designArena": null
+      }
+    },
+    {
+      "id": "google/gemma-4-31b-it:free",
+      "provider": "google",
+      "kind": "free",
+      "aliasTarget": null,
+      "free": true,
+      "name": "Google: Gemma 4 31B (free)",
+      "description": "Gemma 4 31B Instruct is Google DeepMind's 30.7B dense multimodal model supporting text and image input with text output. Features a 256K token context window, configurable thinking/reasoning mode, native function...",
+      "contextLength": 262144,
+      "inputModalities": [
+        "image",
+        "text",
+        "video"
+      ],
+      "knowledgeCutoff": null,
+      "pricing": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "reasoning": {
+        "mandatory": false,
+        "defaultEnabled": false,
+        "supportedEfforts": [],
+        "defaultEffort": null
+      },
+      "benchmarks": {
+        "artificialAnalysis": {
+          "intelligence": 15.4,
+          "coding": 43.4,
+          "agentic": 6.7
+        },
+        "designArena": null
+      }
+    }
+  ]
+}

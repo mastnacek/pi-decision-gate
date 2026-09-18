@@ -27,10 +27,13 @@
     "README*.md",
     "LICENSE",
     "*.ts",
+    "models.json",
+    "scripts",
     "package.json"
   ],
   "scripts": {
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "fetch-models": "node scripts/fetch-models.mjs"
   },
   "pi": {
     "extensions": [

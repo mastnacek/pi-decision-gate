@@ -9,6 +9,7 @@ Tento dokument slouží současně jako **uživatelská příručka**, **technic
 ## 📑 Obsah
 
 1. [Vize a cíle produktu (PRD)](#1-vize-a-cíle-produktu-prd)
+   - [1.3 Přehled funkcí](#13-přehled-funkcí)
 2. [Systémová architektura a toky dat](#2-systémová-architektura-a-toky-dat)
 3. [Detailní popis modulů](#3-detailní-popis-modulů)
    - [3.1 `types.ts` — Datové struktury a typy](#31-typests--datové-struktury-a-typy)
@@ -19,6 +20,7 @@ Tento dokument slouží současně jako **uživatelská příručka**, **technic
    - [3.6 `balance.ts` — Směnný kurz ČNB a OpenRouter kredit](#36-balancets--směnný-kurz-čnb-a-openrouter-kredit)
    - [3.7 `status.ts` — Vykreslování statusbaru a nápovědy](#37-statusts--vykreslování-statusbaru-a-nápovědy)
    - [3.8 `index.ts` — Vstupní bod, CLI příkazy a autocompleti](#38-indexts--vstupní-bod-cli-příkazy-a-autocompleti)
+   - [3.9 `herdr.ts` — Integrace s Herdr (panes, sub-agenti, delegace)](#39-herdrts--integrace-s-herdr-panes-sub-agenti-delegace)
 4. [Funkční požadavky (FR)](#4-funkční-požadavky-fr)
 5. [Nefunkční požadavky (NFR)](#5-nefunkční-požadavky-nfr)
 6. [Konfigurace a hierarchie nastavení](#6-konfigurace-a-hierarchie-nastavení)
@@ -41,8 +43,48 @@ Moderní LLM agenti (Pi, Claude Code, Cursor, Codex) provádějí volání nást
 `pi-decision-gate` funguje jako bezpečnostní a rozhodovací mezivrstva v Pi agentu. Předtím, než jakýkoli nástroj provede svou akci, je požadavek zachycen. Plugin:
 - Identifikuje navrhující model a úroveň uvažování (`provider/model`, `thinkingLevel`).
 - Vyhodnotí riziko pomocí specializovaného rychlého modelu **TypeSafe Jev (System One)** přes OpenRouter (latence ~250 ms, minimální cena).
-- Nabídne uživateli interaktivní volbu: **Schválit**, **Upravit argumenty v editoru**, **Odmítnout** nebo **Osvobodit nástroj pro zbytek sezení**.
+- Nabídne uživateli interaktivní volbu: **Schválit**, **Schválit + nastavit thinking**, **Upravit argumenty v editoru**, **Přepnout model**, **Spustit v izolovaném okně (Herdr)**, **Odmítnout** nebo **Osvobodit nástroj pro zbytek sezení**.
 - V patičce agenta (statusline) trvale zobrazuje aktivní režim, počet schválených/zamítnutých akcí a celkové náklady sezení v **Kč** podle denního kurzu ČNB.
+
+### 1.3 Přehled funkcí
+
+#### Bezpečnostní brána
+- Zachytává každý `tool_call` před provedením (human-in-the-loop schvalování).
+- 4 režimy schvalování: `always`, `risky`, `destructive`, `off`.
+- Nastavitelný práh rizika (0.0–1.0) pro režim `risky`.
+- Trvalé (`exemptTools`) i dočasné (`sessionExemptions`) výjimky nástrojů.
+- Headless fallback: bez TUI se akce propustí dle konfigurace, plugin nikdy nezablokuje neinteraktivní běh.
+
+#### Hodnocení rizik (Jev System One)
+- Sémantické posouzení akce modelem **TypeSafe Jev** přes OpenRouter Decisions API (7 paralelních otázek).
+- Offline regex heuristika jako pojistka při výpadku (`rm -rf`, `git reset --hard`, `git push --force`, `drop table`, …).
+- Detekce citlivých dat (API klíče, tokeny, privátní klíče, hesla) — takový payload se nikdy neodesílá na externí API a vyhodnotí se lokálně.
+
+#### Schvalovací dialog
+- Atribuce modelu (provider/model + úroveň thinking).
+- Skóre rizika, kategorie, pravděpodobnost nevratnosti a cena posouzení v Kč.
+- Syntax-highlightovaný náhled argumentů (barvy Eldritch).
+- Doporučení úrovně thinking + doporučení Herdr okna.
+- Akce: Schválit · Schválit + thinking · Upravit argumenty · Přepnout model · Změnit thinking · Spustit v novém okně (Herdr) · Odmítnout · Osvobodit pro sezení.
+
+#### Modelové statistiky a routing
+- Přehled modelů používaných za posledních 7 dní (`/gate models`).
+- Skóre vhodnosti modelů (45–99 %) včetně penalizace za ztrátu prompt cache.
+- Přepnutí modelu přímo ze schvalovacího dialogu a opakování tahu.
+
+#### Herdr integrace
+- Rozdělení okna a spuštění sub-agenta v izolovaném pane.
+- Delegace destruktivních, dlouhotrvajících či autonomních úkolů mimo hlavní relaci.
+
+#### Finance a audit
+- Spotřeba sezení na Jev v Kč (kurz ČNB s fallbackem na ECB).
+- Zůstatek kreditu OpenRouteru (`/gate balance`).
+- Auditní log rozhodnutí do `.pi/decision-gate/decisions.jsonl`.
+- Statusline s režimem, modelem, počty ✓/✗ a náklady.
+
+#### Konfigurace
+- Kaskádová konfigurace: výchozí → globální → projektová.
+- `/gate` i `/decision-gate` s víceúrovňovým našeptáváním a českou nápovědou.
 
 ---
 
@@ -125,6 +167,7 @@ pi-decision-gate/
 ├── balance.ts            # ČNB API, kurz USD/CZK a kredit na OpenRouteru
 ├── status.ts             # Formátování statusbaru a česká nápověda
 ├── index.ts              # Vstupní bod, registrace příkazů a autocompleti
+├── herdr.ts              # Integrace s Herdr workspace managerem (panes, sub-agenti)
 └── README.md             # Specifikace a PRD
 ```
 
@@ -169,11 +212,16 @@ Funkce `handleToolCallGate(event, ctx)`:
    - `risky`: Dotazuje se, pokud $skóre / 2.0 \ge threshold$ nebo $irreversible \ge threshold$.
    - `destructive`: Dotazuje se, pokud je kategorie `destructive` nebo příkaz odpovídá destruktivnímu regexu.
 5. Pokud je akce vyhodnocena jako bezpečná, zapíše se jako `auto_approved` a ihned pokračuje.
-6. Pokud vyžaduje schválení, otevře dialog `ctx.ui.select()`:
+6. Pokud vyžaduje schválení, otevře dialog `ctx.ui.select()` s těmito akcemi:
    - **Schválit:** Započítá schválení, zapíše auditní záznam, tool se spustí.
+   - **Schválit + thinking [úroveň]:** Nastaví doporučenou úroveň myšlení (`pi.setThinkingLevel`) a schválí.
    - **Upravit argumenty:** Otevře `ctx.ui.editor()` s naformátovaným JSONem. Uživatel parametry upraví. Pokud je JSON validní, kód přepíše klíče v `event.input` in-place a akce se spustí s novými parametry.
+   - **Přepnout model a zopakovat tah:** Seřadí modely dle vhodnosti (skóre + četnost + cache penalty) a po výběru zavolá `pi.setModel()`, zruší původní volání a nechá nový model navrhnout pokračování.
+   - **Změnit úroveň myšlení:** Nabídne `off | minimal | low | medium | high | max` a vrátí se do dialogu.
+   - **Spustit v novém okně (Herdr pane):** Rozdělí okno, spustí sub-agenta s doporučeným modelem a deleguje úkol; původní volání je zablokováno (`delegated_to_pane`).
    - **Odmítnout:** Vrátí `{ block: true, reason: "..." }`. Agent obdrží vysvětlení jako výsledek toolu a může přeplánovat.
    - **Osvobodit pro sezení:** Přidá nástroj do `state.sessionExemptions` a schválí.
+7. Pokud TUI není k dispozici (headless), akce se propustí bez dotazu, aby nedošlo k zablokování neinteraktivního běhu.
 
 ### 3.4 `jev.ts` — Sémantické hodnocení System One (OpenRouter)
 
@@ -181,10 +229,15 @@ Model **Jev** od TypeSafe AI negeneruje text, nýbrž vrací kalibrovaná pravd�
 - **Endpoint:** `https://openrouter.ai/api/alpha/decisions`
 - **Model:** `~typesafe/jev-latest` (nebo `typesafe/jev-1.13`)
 - **Autentizace:** Automatické nalezení tokenu v `~/.pi/agent/auth.json` (klíč `openrouter.access` nebo `openrouter.apiKey`), `process.env.OPENROUTER_API_KEY` nebo přes `ctx.modelRegistry`.
-- **Otázky předávané modelu:**
+- **Otázky předávané modelu** (7 paralelních otázek v jediném požadavku):
   1. `risk` (`score`): 3bodová rubrika (0 = Bezpečné čtení, 1 = Běžná vratná úprava, 2 = Destruktivní operace / smazání / externí přepis).
-  2. `irreversible` (`noul`): Pravděpodobnost (0..1) nevratnosti akce.
-  3. `off_task` (`noul`): Pravděpodobnost (0..1) odklonu od programátorského kontextu.
+  2. `consequence` (`score`): závažnost dopadu při chybě (0–3, dosah / „blast radius“).
+  3. `family` (`choice`): taxonomie úkolu (`routine-transformation`, `investigation`, `mutation`, `cleanup`).
+  4. `effort` (`choice`): doporučená úroveň uvažování (`low`, `medium`, `high`).
+  5. `isolate_pane` (`score`): přínos izolovaného běhu v samostatném okně / sub-pane.
+  6. `irreversible` (`noul`): Pravděpodobnost (0..1) nevratnosti akce.
+  7. `off_task` (`noul`): Pravděpodobnost (0..1) odklonu od programátorského kontextu.
+- **Sanitizace citlivých dat:** Před odesláním na externí API plugin zkontroluje payload (API klíče, tokeny, privátní klíče, hesla). Při nálezu se payload neodešle a použije se lokální heuristika (`sanitized: true`).
 - **Offline pojistka:** Pokud je Jev nedostupný nebo je vypnutý, vyhodnocuje se lokální regex vzory (`rm -rf`, `git reset --hard`, `git push --force`, `drop table` apod.).
 - **Náklady:** Plugin čte `usage.cost` z odpovědi OpenRouteru a přičítá jej do `state.sessionCostUsd`.
 
@@ -235,6 +288,17 @@ Registruje příkazy `/gate` a `/decision-gate` s víceúrovňovým našeptává
   - `exempt ` $\rightarrow$ `list`, `add`, `remove`
   - `balance ` $\rightarrow$ `refresh`
 
+### 3.9 `herdr.ts` — Integrace s Herdr (panes, sub-agenti, delegace)
+
+Modul propojuje bránu s [Herdr](https://herdr.dev/) workspace managerem a umožňuje izolovaný běh rizikových či dlouhotrvajících úkolů:
+- `isHerdrEnvironment()` — detekce běhu uvnitř Herdr (`HERDR_ENV`, `HERDR_PANE_ID`, `HERDR_SOCKET_PATH`).
+- `splitHerdrPane({ direction, cwd })` — rozdělí aktuální okno (vpravo/dole) a vrátí `paneId`.
+- `startHerdrAgent({ name, kind, paneId, model, thinking, theme })` — spustí sub-agenta (výchozí `pi`) v novém pane.
+- `promptHerdrAgent({ target, promptText, wait })` — odešle zadání běžícímu agentovi (sync/async).
+- `closeHerdrPane(paneId)` — uzavře pane.
+
+Doporučení delegace skládá `getHerdrPaneRecommendation()` (models.ts): kombinuje `shouldOffloadToPane` / `isolatePaneScore` od Jev, detekci dlouhotrvajících příkazů (npm test/build, cargo, pytest, docker, …) a destruktivní kategorii. Doporučený model pro izolovaný běh se vybírá dle `evaluateModelSuitability()`.
+
 ---
 
 ## 4. Funkční požadavky (FR)
@@ -247,6 +311,11 @@ Registruje příkazy `/gate` a `/decision-gate` s víceúrovňovým našeptává
 - **FR-6 (Analýza sezení):** Příkaz `/gate models` musí proskenovat historii sezení za 7 dní a vypsat tabulku reálně používaných modelů a četnosti jejich tahů.
 - **FR-7 (Finanční metriky):** Statusbar a příkaz `/gate balance` musí zobrazovat náklady v CZK přepočtené dle ČNB a zůstatek kreditu na OpenRouteru.
 - **FR-8 (Perzistence nastavení):** Příkazy s příznakem `--global` se musí trvale uložit do `~/.pi/agent/pi-decision-gate.json`, bez příznaku do `.pi/pi-decision-gate.json`.
+- **FR-9 (Rozšířené hodnocení Jev):** Posouzení musí kromě rizika pokrývat i závažnost dopadu (`consequence`), taxonomii úkolu (`family`), doporučenou úroveň uvažování (`effort`) a přínos izolace (`isolate_pane`).
+- **FR-10 (Sanitizace citlivých dat):** Payload obsahující API klíče, tokeny, hesla či privátní klíče se nesmí odeslat na externí API a musí se vyhodnotit lokálně.
+- **FR-11 (Modelový routing):** Schvalovací dialog musí nabídnout přepnutí modelu na základě skóre vhodnosti (vč. penalizace ztráty prompt cache) a umožnit opakování tahu.
+- **FR-12 (Herdr delegace):** Destruktivní, dlouhotrvající či autonomní úkoly musí být delegovatelné do izolovaného okna Herdr se samostatným sub-agentem a doporučeným modelem.
+- **FR-13 (Nastavení úrovně myšlení):** Uživatel musí moci přímo z dialogu změnit úroveň thinking (`off`–`max`) nebo schválit akci s doporučenou úrovní.
 
 ---
 
