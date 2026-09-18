@@ -66,6 +66,22 @@ export interface ModelUsageStat {
   source: "session" | "config" | "active";
 }
 
+export interface ModelSuitability {
+  modelKey: string;
+  provider: string;
+  id: string;
+  score: number;
+  reason: string;
+  turns: number;
+  source: string;
+}
+
+export interface ThinkingRecommendation {
+  recommendedLevel: "low" | "medium" | "high";
+  reason: string;
+  canOptimize: boolean;
+}
+
 export interface DecisionGateState {
   config: DecisionGateConfig;
   sessionCostUsd: number;

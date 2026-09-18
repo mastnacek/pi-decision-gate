@@ -7,25 +7,78 @@ import type { DecisionGateConfig } from "./types";
 
 export const STATUS_KEY = "decision-gate";
 
-// ANSI paleta barev přívětivá pro tmavá i světlá témata
-export const ANSI_AMBER = "\x1b[38;2;218;165;32m";
-export const ANSI_GREEN = "\x1b[38;2;95;200;140m";
-export const ANSI_CYAN = "\x1b[38;2;95;200;230m";
-export const ANSI_LAVENDER = "\x1b[38;2;170;160;220m";
-export const ANSI_RED = "\x1b[38;2;210;100;100m";
-export const ANSI_DIM = "\x1b[38;2;120;124;140m";
-export const ANSI_YELLOW = "\x1b[38;2;230;200;90m";
+// ============================================================================
+// Autentická Eldritch ANSI paleta (shodná s eldritch.json)
+// ============================================================================
+export const ELDRITCH_BG = "\x1b[48;2;33;35;55m";              // #212337
+export const ELDRITCH_BG_ALT = "\x1b[48;2;40;43;67m";          // #282b43
+export const ELDRITCH_PURPLE = "\x1b[38;2;164;140;242m";      // #a48cf2 — accent
+export const ELDRITCH_PURPLE_LIGHT = "\x1b[38;2;217;159;253m"; // #d99ffd — customMessageLabel / nadpisy
+export const ELDRITCH_PURPLE_DARK = "\x1b[38;2;98;84;145m";   // #625491
+export const ELDRITCH_CYAN = "\x1b[38;2;4;209;249m";          // #04d1f9 — toolTitle / borderAccent / klíče
+export const ELDRITCH_GREEN = "\x1b[38;2;55;244;153m";        // #37f499 — success / safe / kód
+export const ELDRITCH_YELLOW = "\x1b[38;2;241;252;121m";      // #f1fc79 — warning / stringy
+export const ELDRITCH_RED = "\x1b[38;2;241;108;117m";         // #f16c75 — error / destructive
+export const ELDRITCH_ORANGE = "\x1b[38;2;247;198;127m";      // #f7c67f — currency / cost / čísla
+export const ELDRITCH_PINK = "\x1b[38;2;242;101;181m";        // #f265b5 — keywords / booleans
+export const ELDRITCH_GRAY = "\x1b[38;2;165;175;194m";        // #a5afc2 — muted text
+export const ELDRITCH_DIM = "\x1b[38;2;95;107;138m";          // #5f6b8a — dim / oddělovače / rámečky
+export const ELDRITCH_TEXT = "\x1b[38;2;235;250;250m";        // #ebfafa — hlavní text
 export const ANSI_BOLD = "\x1b[1m";
 export const ANSI_RESET = "\x1b[0m";
+
+// Zpětná kompatibilita pro stávající importy
+export const ANSI_AMBER = ELDRITCH_ORANGE;
+export const ANSI_GREEN = ELDRITCH_GREEN;
+export const ANSI_CYAN = ELDRITCH_CYAN;
+export const ANSI_LAVENDER = ELDRITCH_PURPLE;
+export const ANSI_PURPLE = ELDRITCH_PURPLE;
+export const ANSI_PURPLE_LIGHT = ELDRITCH_PURPLE_LIGHT;
+export const ANSI_RED = ELDRITCH_RED;
+export const ANSI_DIM = ELDRITCH_DIM;
+export const ANSI_GRAY = ELDRITCH_GRAY;
+export const ANSI_YELLOW = ELDRITCH_YELLOW;
+export const ANSI_ORANGE = ELDRITCH_ORANGE;
+export const ANSI_PINK = ELDRITCH_PINK;
+export const ANSI_TEXT = ELDRITCH_TEXT;
 
 export function paint(color: string, text: string): string {
   return `${color}${text}${ANSI_RESET}`;
 }
 
+/**
+ * Syntax highlighter pro formátovaný JSON v autentických barvách tématu Eldritch
+ */
+export function highlightJsonEldritch(jsonStr: string): string {
+  return jsonStr
+    .split("\n")
+    .map((line) => {
+      return line.replace(
+        /("(?:\\u[0-9a-fA-F]{4}|\\[^u]|[^\\"])*")(\s*:)?|(\btrue\b|\bfalse\b|\bnull\b)|(-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)|([{}[\],])/g,
+        (_match, str, colon, boolOrNull, num, punct) => {
+          if (str) {
+            if (colon) {
+              return `${ELDRITCH_CYAN}${str}${ANSI_RESET}${paint(ELDRITCH_DIM, colon)}`;
+            }
+            return `${ELDRITCH_YELLOW}${str}${ANSI_RESET}`;
+          }
+          if (boolOrNull) {
+            if (boolOrNull === "null") return paint(ELDRITCH_DIM, boolOrNull);
+            return paint(ELDRITCH_PINK, boolOrNull);
+          }
+          if (num) return paint(ELDRITCH_ORANGE, num);
+          if (punct) return paint(ELDRITCH_DIM, punct);
+          return _match;
+        },
+      );
+    })
+    .join("\n");
+}
+
 export function formatToggleBadge(enabled: boolean): string {
   return enabled
-    ? `${ANSI_BOLD}${ANSI_GREEN}● ON${ANSI_RESET}`
-    : `${ANSI_DIM}${ANSI_RED}○ OFF${ANSI_RESET}`;
+    ? `${ANSI_BOLD}${ELDRITCH_GREEN}● ON${ANSI_RESET}`
+    : `${ELDRITCH_DIM}${ELDRITCH_RED}○ OFF${ANSI_RESET}`;
 }
 
 export function formatChoice(
@@ -39,11 +92,11 @@ export function formatChoice(
       const val = typeof c === "string" ? c : c.value;
       const lbl = typeof c === "string" ? c : (c.label ?? c.value);
       if (val.toLowerCase() === activeStr) {
-        return `${ANSI_BOLD}${ANSI_GREEN}● ${lbl}${ANSI_RESET}`;
+        return `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}● ${lbl}${ANSI_RESET}`;
       }
-      return `${ANSI_DIM}${lbl}${ANSI_RESET}`;
+      return `${ELDRITCH_DIM}${lbl}${ANSI_RESET}`;
     })
-    .join(`${ANSI_DIM}|${ANSI_RESET}`);
+    .join(`${ELDRITCH_DIM} | ${ANSI_RESET}`);
 }
 
 /**
@@ -79,25 +132,25 @@ export function buildStatuslineText(ctx?: ExtensionContext): string {
   const config = state.config;
 
   if (!config.enabled || config.mode === "off") {
-    return paint(ANSI_DIM, "🛡️ gate:off");
+    return paint(ELDRITCH_DIM, "🛡️ gate:off");
   }
 
-  const groupSep = paint(ANSI_DIM, " │ ");
-  const itemSep = paint(ANSI_DIM, " · ");
+  const groupSep = paint(ELDRITCH_DIM, " │ ");
+  const itemSep = paint(ELDRITCH_DIM, " · ");
 
   // 1. Skupina: Stav a režim brány
   let modeStr = `🛡️ ${config.mode}`;
   if (config.mode === "risky") {
     modeStr += `(≥${config.threshold})`;
   }
-  const gateGroup = [paint(ANSI_GREEN, modeStr)];
+  const gateGroup = [paint(ELDRITCH_CYAN, modeStr)];
 
   // 2. Skupina: Aktivní model navrhující akce
   const modelText = formatShortModel(ctx);
-  gateGroup.push(paint(ANSI_LAVENDER, modelText));
+  gateGroup.push(paint(ELDRITCH_PURPLE, modelText));
 
   // 3. Skupina: Počet schválených a zablokovaných rozhodnutí
-  const statsText = `${paint(ANSI_GREEN, `✓${state.approvedCount}`)}${itemSep}${paint(ANSI_RED, `✗${state.blockedCount}`)}`;
+  const statsText = `${paint(ELDRITCH_GREEN, `✓${state.approvedCount}`)}${itemSep}${paint(ELDRITCH_RED, `✗${state.blockedCount}`)}`;
 
   // 4. Skupina: Spotřeba v Kč a kredit na OpenRouteru
   const costUsd = state.sessionCostUsd;
@@ -107,15 +160,15 @@ export function buildStatuslineText(ctx?: ExtensionContext): string {
   let moneyStr = "💳 ";
   if (typeof rate === "number" && rate > 0) {
     const costCzk = costUsd * rate;
-    moneyStr += paint(ANSI_AMBER, `${fmtSmallAmount(costCzk)} Kč`);
+    moneyStr += paint(ELDRITCH_ORANGE, `${fmtSmallAmount(costCzk)} Kč`);
     if (bal) {
       const balCzk = bal.remaining * rate;
-      moneyStr += `${paint(ANSI_DIM, " / ")}${paint(ANSI_GREEN, `${fmtSmallAmount(balCzk)} Kč`)}`;
+      moneyStr += `${paint(ELDRITCH_DIM, " / ")}${paint(ELDRITCH_GREEN, `${fmtSmallAmount(balCzk)} Kč`)}`;
     }
   } else {
-    moneyStr += paint(ANSI_AMBER, `$${fmtSmallAmount(costUsd)}`);
+    moneyStr += paint(ELDRITCH_ORANGE, `$${fmtSmallAmount(costUsd)}`);
     if (bal) {
-      moneyStr += `${paint(ANSI_DIM, " / ")}${paint(ANSI_GREEN, `$${bal.remaining.toFixed(2)}`)}`;
+      moneyStr += `${paint(ELDRITCH_DIM, " / ")}${paint(ELDRITCH_GREEN, `$${bal.remaining.toFixed(2)}`)}`;
     }
   }
 
@@ -155,32 +208,32 @@ export function buildCzechHelp(config: DecisionGateConfig): string {
   const costStr = costCzk !== undefined ? `${fmtSmallAmount(costCzk)} Kč ($${fmtSmallAmount(costUsd)})` : `$${fmtSmallAmount(costUsd)}`;
 
   return [
-    `${ANSI_BOLD}${ANSI_CYAN}🛡️ pi-decision-gate${ANSI_RESET} — Brána schvalování rozhodnutí modelu s kontrolou přes Jev`,
-    "Zajišťuje plnou kontrolu uživatele nad akcemi modelu. U každého volání nástroje zobrazuje navrhující model, parametry a odhad rizika.",
+    `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🛡️  pi-decision-gate${ANSI_RESET} — ${paint(ELDRITCH_GRAY, "Brána schvalování rozhodnutí modelu s kontrolou přes Jev")}`,
+    paint(ELDRITCH_DIM, "Zajišťuje plnou kontrolu uživatele nad akcemi modelu s hodnocením rizik a cenou v Kč."),
     "",
-    `${ANSI_BOLD}Příkazy & Konfigurace:${ANSI_RESET}`,
-    `  /gate on|off                   — hlavní vypínač brány (${formatChoice(["on", "off"], config.enabled)})`,
-    `  /gate mode <režim>             — režim schvalování (${formatChoice(["always", "risky", "destructive", "off"], config.mode)})`,
+    `${ANSI_BOLD}${ELDRITCH_PURPLE}Příkazy & Konfigurace:${ANSI_RESET}`,
+    `  ${paint(ELDRITCH_CYAN, "/gate on|off")}                   — hlavní vypínač brány (${formatChoice(["on", "off"], config.enabled)})`,
+    `  ${paint(ELDRITCH_CYAN, "/gate mode <režim>")}             — režim schvalování (${formatChoice(["always", "risky", "destructive", "off"], config.mode)})`,
     `                                   • always: schvalovat každou akci (kromě výjimek)`,
     `                                   • risky: schvalovat akce s rizikem Jev ≥ práh`,
     `                                   • destructive: schvalovat jen nevratné akce (rm, reset, drop...)`,
     `                                   • off: brána je neaktivní`,
-    `  /gate threshold <0.1-1.0>      — práh rizika pro režim 'risky' (aktuálně: ${paint(ANSI_CYAN, String(config.threshold))})`,
-    `  /gate jev on|off               — hodnocení rizik přes model Jev na OpenRouteru (${formatToggleBadge(config.useJev)})`,
-    `  /gate edit on|off              — možnost interaktivně upravit argumenty před schválením (${formatToggleBadge(config.allowEdit)})`,
-    `  /gate exempt list              — seznam osvobozených nástrojů [${config.exemptTools.join(", ")}]`,
-    `  /gate exempt add <nástroj>     — přidá nástroj do výjimek (např. read)`,
-    `  /gate exempt remove <nástroj>  — odebere nástroj z výjimek`,
-    `  /gate models                   — přehled modelů používaných v sezeních za posledních 7 dní`,
-    `  /gate status                   — zobrazí detailní diagnostiku, statistiky a náklady`,
-    `  /gate balance [refresh]        — stav kreditu na OpenRouteru a kurz ČNB`,
-    `  /gate reset                    — obnoví výchozí nastavení`,
+    `  ${paint(ELDRITCH_CYAN, "/gate threshold <0.1-1.0>")}      — práh rizika pro režim 'risky' (aktuálně: ${paint(ELDRITCH_YELLOW, String(config.threshold))})`,
+    `  ${paint(ELDRITCH_CYAN, "/gate jev on|off")}               — hodnocení rizik přes model Jev na OpenRouteru (${formatToggleBadge(config.useJev)})`,
+    `  ${paint(ELDRITCH_CYAN, "/gate edit on|off")}              — možnost interaktivně upravit argumenty (${formatToggleBadge(config.allowEdit)})`,
+    `  ${paint(ELDRITCH_CYAN, "/gate exempt list")}              — seznam osvobozených nástrojů [${paint(ELDRITCH_YELLOW, config.exemptTools.join(", "))}]`,
+    `  ${paint(ELDRITCH_CYAN, "/gate exempt add <nástroj>")}     — přidá nástroj do výjimek (např. read)`,
+    `  ${paint(ELDRITCH_CYAN, "/gate exempt remove <nástroj>")}  — odebere nástroj z výjimek`,
+    `  ${paint(ELDRITCH_CYAN, "/gate models")}                   — přehled modelů používaných v sezeních za posledních 7 dní`,
+    `  ${paint(ELDRITCH_CYAN, "/gate status")}                   — zobrazí detailní diagnostiku, statistiky a náklady`,
+    `  ${paint(ELDRITCH_CYAN, "/gate balance [refresh]")}        — stav kreditu na OpenRouteru a kurz ČNB`,
+    `  ${paint(ELDRITCH_CYAN, "/gate reset")}                    — obnoví výchozí nastavení`,
     "",
-    `${ANSI_DIM}Tip: Přidejte přepínač --global pro trvalé uložení do ~/.pi/agent/pi-decision-gate.json${ANSI_RESET}`,
+    `${ELDRITCH_DIM}Tip: Přidejte přepínač --global pro trvalé uložení do ~/.pi/agent/pi-decision-gate.json${ANSI_RESET}`,
     "",
-    `${ANSI_BOLD}Aktuální stav sezení:${ANSI_RESET}`,
-    `  • Režim: ${paint(ANSI_GREEN, config.mode)} | Jev posuzování: ${formatToggleBadge(config.useJev)} | Editace: ${formatToggleBadge(config.allowEdit)}`,
-    `  • Schváleno: ${paint(ANSI_GREEN, String(state.approvedCount))} | Zablokováno: ${paint(ANSI_RED, String(state.blockedCount))} | Upraveno: ${paint(ANSI_YELLOW, String(state.editedCount))}`,
-    `  • Útrata sezení za Jev: ${paint(ANSI_AMBER, costStr)}`,
+    `${ANSI_BOLD}${ELDRITCH_PURPLE}Aktuální stav sezení:${ANSI_RESET}`,
+    `  • Režim: ${paint(ELDRITCH_GREEN, config.mode)} | Jev posuzování: ${formatToggleBadge(config.useJev)} | Editace: ${formatToggleBadge(config.allowEdit)}`,
+    `  • Schváleno: ${paint(ELDRITCH_GREEN, String(state.approvedCount))} | Zablokováno: ${paint(ELDRITCH_RED, String(state.blockedCount))} | Upraveno: ${paint(ELDRITCH_YELLOW, String(state.editedCount))}`,
+    `  • Útrata sezení za Jev: ${paint(ELDRITCH_ORANGE, costStr)}`,
   ].join("\n");
 }

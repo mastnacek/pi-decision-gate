@@ -48,7 +48,7 @@ export default function (pi: ExtensionAPI): void {
 
   // 3. Zachytávání akcí modelu před provedením
   pi.on("tool_call", async (event, ctx: ExtensionContext) => {
-    return handleToolCallGate(event, ctx);
+    return handleToolCallGate(event, ctx, pi);
   });
 
   // 4. Registrace příkazů s líným doplňováním parametrů

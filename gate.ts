@@ -2,12 +2,29 @@
 
 import { appendFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { fmtSmallAmount } from "./balance";
 import { state } from "./config";
 import { assessActionWithJev, matchesDestructivePattern } from "./jev";
-import { ANSI_BOLD, ANSI_CYAN, ANSI_DIM, ANSI_GREEN, ANSI_RED, ANSI_RESET, ANSI_YELLOW, paint, updateStatusline } from "./status";
-import type { DecisionRecord, JevAssessment } from "./types";
+import { evaluateModelSuitability, getThinkingRecommendation } from "./models";
+import {
+  ANSI_BOLD,
+  ANSI_RESET,
+  ELDRITCH_CYAN,
+  ELDRITCH_DIM,
+  ELDRITCH_GRAY,
+  ELDRITCH_GREEN,
+  ELDRITCH_ORANGE,
+  ELDRITCH_PURPLE,
+  ELDRITCH_PURPLE_LIGHT,
+  ELDRITCH_RED,
+  ELDRITCH_TEXT,
+  ELDRITCH_YELLOW,
+  highlightJsonEldritch,
+  paint,
+  updateStatusline,
+} from "./status";
+import type { DecisionRecord } from "./types";
 
 /**
  * Uloží záznam o rozhodnutí do auditního logu (.pi/decision-gate/decisions.jsonl)
@@ -30,8 +47,9 @@ function logDecision(record: DecisionRecord, cwd?: string): void {
  * Interceptuje tool_call a zprostředkuje schválení uživatelem
  */
 export async function handleToolCallGate(
-  event: { toolName: string; input: Record<string, any> },
+  event: { toolName: string; input: Record<string, unknown> },
   ctx: ExtensionContext,
+  pi?: ExtensionAPI,
 ): Promise<{ block?: boolean; reason?: string } | undefined> {
   const config = state.config;
 
@@ -97,27 +115,56 @@ export async function handleToolCallGate(
     return undefined;
   }
 
-  const preview = JSON.stringify(event.input, null, 2);
+  const rawPreview = JSON.stringify(event.input, null, 2);
+  const preview = highlightJsonEldritch(rawPreview);
 
-  // Popisky hodnocení Jev
-  const riskColor = assessment.riskCategory === "destructive" ? ANSI_RED : assessment.riskCategory === "moderate" ? ANSI_YELLOW : ANSI_GREEN;
+  // Popisky hodnocení Jev v barvách Eldritch
+  const riskColor = assessment.riskCategory === "destructive"
+    ? `${ANSI_BOLD}${ELDRITCH_RED}`
+    : assessment.riskCategory === "moderate"
+      ? ELDRITCH_YELLOW
+      : ELDRITCH_GREEN;
+
   const costInfo = assessment.costCzk !== undefined
     ? `${fmtSmallAmount(assessment.costCzk)} Kč`
     : `$${fmtSmallAmount(assessment.costUsd)}`;
 
+  const thinkingRec = getThinkingRecommendation(event.toolName, event.input, assessment, ctx.thinkingLevel);
+  const hintLine = thinkingRec.canOptimize
+    ? `${paint(ELDRITCH_YELLOW, "💡 Doporučení:")} ${paint(ELDRITCH_TEXT, thinkingRec.reason)}`
+    : "";
+
   const header = [
-    `${ANSI_BOLD}${ANSI_CYAN}🛡️ Rozhodnutí modelu vyžaduje schválení${ANSI_RESET}`,
-    `Navrhl model: ${paint(ANSI_GREEN, modelLabel)}${paint(ANSI_DIM, thinking)}`,
-    `Nástroj:      ${paint(ANSI_YELLOW, event.toolName)}`,
-    `Posouzení Jev: ${paint(riskColor, `Riziko ${assessment.riskScore.toFixed(2)}/2.0 (${assessment.riskCategory})`)} │ Nevratnost: ${Math.round(assessment.irreversibleProb * 100)}% │ Náklad: ${costInfo}`,
+    `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🛡️  Rozhodnutí modelu vyžaduje schválení${ANSI_RESET}`,
+    paint(ELDRITCH_DIM, "─".repeat(54)),
+    `${paint(ELDRITCH_GRAY, "Navrhl model:  ")}${paint(ELDRITCH_PURPLE, modelLabel)}${paint(ELDRITCH_DIM, thinking)}`,
+    `${paint(ELDRITCH_GRAY, "Nástroj:       ")}${paint(ANSI_BOLD + ELDRITCH_CYAN, event.toolName)}`,
+    `${paint(ELDRITCH_GRAY, "Posouzení Jev: ")}${paint(riskColor, `Riziko ${assessment.riskScore.toFixed(2)}/2.0 (${assessment.riskCategory})`)}${paint(ELDRITCH_DIM, " │ ")}${paint(ELDRITCH_GRAY, "Nevratnost: ")}${paint(ELDRITCH_TEXT, `${Math.round(assessment.irreversibleProb * 100)}%`)}${paint(ELDRITCH_DIM, " │ ")}${paint(ELDRITCH_GRAY, "Náklad: ")}${paint(ELDRITCH_ORANGE, costInfo)}`,
+    ...(hintLine ? [hintLine] : []),
     "",
-    `${ANSI_BOLD}Navrhované argumenty:${ANSI_RESET}`,
+    `${ANSI_BOLD}${ELDRITCH_PURPLE}Navrhované argumenty:${ANSI_RESET}`,
     preview,
     "",
-    "Vyberte akci:",
+    paint(ELDRITCH_PURPLE_LIGHT, "Vyberte akci:"),
   ].join("\n");
 
   const options = ["Schválit"];
+
+  const quickThinkingOption = `Schválit + thinking [${thinkingRec.recommendedLevel}]`;
+  if (pi && thinkingRec.canOptimize) {
+    options.push(quickThinkingOption);
+  }
+
+  const switchModelOption = "Přepnout model a zopakovat tah...";
+  if (pi) {
+    options.push(switchModelOption);
+  }
+
+  const changeThinkingOption = "Změnit úroveň myšlení (thinking)...";
+  if (pi) {
+    options.push(changeThinkingOption);
+  }
+
   if (config.allowEdit) {
     options.push("Upravit argumenty");
   }
@@ -125,6 +172,131 @@ export async function handleToolCallGate(
   options.push(`Osvobodit '${event.toolName}' pro toto sezení`);
 
   const choice = await ctx.ui.select(header, options);
+
+  // Zpracování rychlých akcí
+  if (choice === quickThinkingOption) {
+    if (pi) {
+      pi.setThinkingLevel(thinkingRec.recommendedLevel);
+      ctx.ui.notify(`Úroveň thinking nastavena na [${thinkingRec.recommendedLevel}] pro další uvažování.`, "info");
+    }
+    state.approvedCount += 1;
+    logDecision(
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        timestamp: new Date().toISOString(),
+        model: { provider: modelProvider, id: modelId, thinking: thinkingRec.recommendedLevel },
+        tool: event.toolName,
+        input: event.input,
+        verdict: "approved",
+        assessment,
+      },
+      ctx.cwd,
+    );
+    updateStatusline(ctx);
+    return undefined;
+  }
+
+  if (choice === switchModelOption) {
+    const candidates = evaluateModelSuitability(event.toolName, event.input, assessment, ctx);
+    const topCandidates = candidates.slice(0, 8);
+
+    const modelHeader = [
+      `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🔄  Výběr modelu pro pokračování (dle vhodnosti & četnosti)${ANSI_RESET}`,
+      paint(ELDRITCH_DIM, "─".repeat(58)),
+      paint(ELDRITCH_GRAY, "Zvolte model, který převezme tento tah:"),
+    ].join("\n");
+
+    const modelOptions = topCandidates.map((c) => {
+      const isCurrent = c.modelKey === `${modelProvider}/${modelId}`;
+      const prefix = isCurrent ? "● " : "  ";
+      return `${prefix}${c.modelKey} │ ${c.score}% — ${c.reason}`;
+    });
+    modelOptions.push("← Zpět do schvalování");
+
+    const chosenOption = await ctx.ui.select(modelHeader, modelOptions);
+    if (!chosenOption || chosenOption === "← Zpět do schvalování") {
+      return handleToolCallGate(event, ctx, pi);
+    }
+
+    const idx = modelOptions.indexOf(chosenOption);
+    const chosenCandidate = topCandidates[idx];
+    if (chosenCandidate && pi) {
+      let targetModel: any;
+      const ctxAny = ctx as any;
+      if (ctxAny.modelRegistry) {
+        targetModel = ctxAny.modelRegistry.find(chosenCandidate.provider, chosenCandidate.id);
+      }
+      if (!targetModel && Array.isArray(ctxAny.scopedModels)) {
+        const found = ctxAny.scopedModels.find(
+          (s: any) => s.model?.provider === chosenCandidate.provider && s.model?.id === chosenCandidate.id,
+        );
+        targetModel = found?.model;
+      }
+
+      if (targetModel) {
+        const ok = await pi.setModel(targetModel);
+        if (ok) {
+          ctx.ui.notify(`Model úspěšně přepnut na [${chosenCandidate.modelKey}]. Opakuji tah.`, "info");
+          updateStatusline(ctx);
+          logDecision(
+            {
+              id: Math.random().toString(36).slice(2, 10),
+              timestamp: new Date().toISOString(),
+              model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
+              tool: event.toolName,
+              input: event.input,
+              verdict: "rejected",
+              assessment,
+            },
+            ctx.cwd,
+          );
+          return {
+            block: true,
+            reason: `Uživatel změnil model na [${chosenCandidate.modelKey}]. Původní volání nástroje '${event.toolName}' bylo zrušeno a nový model navrhne pokračování.`,
+          };
+        }
+      }
+
+      ctx.ui.notify(`Nepodařilo se aktivovat model [${chosenCandidate.modelKey}]. Ověřte přihlášení (/login).`, "warning");
+      return handleToolCallGate(event, ctx, pi);
+    }
+  }
+
+  if (choice === changeThinkingOption) {
+    const thinkingHeader = [
+      `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🧠  Nastavení hloubky uvažování (Thinking Level)${ANSI_RESET}`,
+      paint(ELDRITCH_DIM, "─".repeat(50)),
+      paint(ELDRITCH_GRAY, `Aktuální úroveň: ${ctx.thinkingLevel ?? "neuvedeno"}`),
+      paint(ELDRITCH_DIM, "Vyšší uvažování = vyšší kvalita, ale delší odezva a více tokenů."),
+    ].join("\n");
+
+    const levels: Array<{ id: "off" | "minimal" | "low" | "medium" | "high" | "max"; desc: string }> = [
+      { id: "off", desc: "Vypnuto (nejrychlejší, bez uvažování)" },
+      { id: "minimal", desc: "Minimální (velmi stručné uvažování)" },
+      { id: "low", desc: "Nízké (úsporné pro jednoduché úkoly a čtení)" },
+      { id: "medium", desc: "Střední (vyvážené pro běžný kód)" },
+      { id: "high", desc: "Vysoké (hluboké uvažování pro refaktoring a ladění)" },
+      { id: "max", desc: "Maximální (plná analytická hloubka)" },
+    ];
+
+    const thinkingOptions = levels.map((l) => {
+      const isCur = ctx.thinkingLevel === l.id;
+      return `${isCur ? "● " : "  "}${l.id.toUpperCase()} — ${l.desc}`;
+    });
+    thinkingOptions.push("← Zpět do schvalování");
+
+    const chosenThinking = await ctx.ui.select(thinkingHeader, thinkingOptions);
+    if (chosenThinking && chosenThinking !== "← Zpět do schvalování") {
+      const idx = thinkingOptions.indexOf(chosenThinking);
+      const target = levels[idx];
+      if (target && pi) {
+        pi.setThinkingLevel(target.id);
+        ctx.ui.notify(`Úroveň thinking nastavena na [${target.id}].`, "info");
+        updateStatusline(ctx);
+      }
+    }
+    return handleToolCallGate(event, ctx, pi);
+  }
 
   // Zpracování volby
   if (!choice || choice === "Odmítnout") {
@@ -169,7 +341,7 @@ export async function handleToolCallGate(
   }
 
   if (choice === "Upravit argumenty") {
-    const editedText = await ctx.ui.editor(`Upravit parametry nástroje ${event.toolName} (JSON):`, preview);
+    const editedText = await ctx.ui.editor(`Upravit parametry nástroje ${event.toolName} (JSON):`, rawPreview);
     if (editedText) {
       try {
         const parsed = JSON.parse(editedText);
@@ -196,7 +368,7 @@ export async function handleToolCallGate(
         );
         updateStatusline(ctx);
         return undefined;
-      } catch (err) {
+      } catch {
         state.blockedCount += 1;
         updateStatusline(ctx);
         return {

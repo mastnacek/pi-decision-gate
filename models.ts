@@ -4,7 +4,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
-import type { ModelUsageStat } from "./types";
+import type { JevAssessment, ModelSuitability, ModelUsageStat, ThinkingRecommendation } from "./types";
 
 const SESSIONS_DIR = join(homedir(), ".pi", "agent", "sessions");
 const SETTINGS_FILE = join(homedir(), ".pi", "agent", "settings.json");
@@ -233,4 +233,135 @@ export function formatModelsReport(stats: ModelUsageStat[], activeModelKey?: str
   lines.push("");
   lines.push("Tip: Tyto modely určují, která inteligence v sezení navrhuje akce.");
   return lines.join("\n");
+}
+
+/**
+ * Zjistí, zda se jedná o bezpečný průzkumný bash příkaz (čtení dat)
+ */
+export function isSafeBashCommand(input: unknown): boolean {
+  if (typeof input !== "object" || input === null || !("command" in input)) return false;
+  const cmd = String((input as { command?: unknown }).command ?? "").trim();
+  return /^(?:ls|git\s+(?:status|diff|log|branch|show|rev-parse)|cat|head|tail|grep|rg|find|pwd|echo|which|uname|stat|file)\b/i.test(cmd);
+}
+
+/**
+ * Doporučí úroveň uvažování (thinking level) podle fáze a rizikovosti úlohy
+ */
+export function getThinkingRecommendation(
+  toolName: string,
+  input: unknown,
+  assessment: JevAssessment,
+  currentLevel?: string,
+): ThinkingRecommendation {
+  const isDestructiveOrRisky =
+    assessment.riskScore >= 1.0 ||
+    assessment.irreversibleProb >= 0.5 ||
+    assessment.riskCategory === "destructive";
+
+  const isReadOnly = toolName === "read" || (toolName === "bash" && isSafeBashCommand(input));
+  const cur = (currentLevel ?? "medium").toLowerCase();
+
+  if (isDestructiveOrRisky) {
+    const canOptimize = cur !== "high" && cur !== "max";
+    return {
+      recommendedLevel: "high",
+      reason: "Kritická nebo nevratná akce. Doporučeno hluboké uvažování (high).",
+      canOptimize,
+    };
+  }
+
+  if (isReadOnly) {
+    const canOptimize = cur === "high" || cur === "max" || cur === "medium";
+    return {
+      recommendedLevel: "low",
+      reason: "Informativní průzkum. Úroveň 'low' ušetří ~60-80 % tokenů a času.",
+      canOptimize,
+    };
+  }
+
+  // Běžné kódování / mutace
+  const canOptimize = cur === "max";
+  return {
+    recommendedLevel: "medium",
+    reason: "Standardní úprava. Vyvážená rychlost a uvažování.",
+    canOptimize,
+  };
+}
+
+/**
+ * Vyhodnotí a seřadí modely podle vhodnosti pro danou akci s lidsky čitelným skóre
+ */
+export function evaluateModelSuitability(
+  toolName: string,
+  input: unknown,
+  assessment: JevAssessment,
+  ctx?: ExtensionContext,
+): ModelSuitability[] {
+  const models = getRecentAndConfiguredModels(ctx);
+  const isDestructiveOrRisky =
+    assessment.riskScore >= 1.0 ||
+    assessment.irreversibleProb >= 0.5 ||
+    assessment.riskCategory === "destructive";
+
+  const isReadOnly = toolName === "read" || (toolName === "bash" && isSafeBashCommand(input));
+
+  return models
+    .map((m) => {
+      let score = 80;
+      let reason = "Osvědčený model";
+      const id = m.id.toLowerCase();
+
+      const isHeavyReasoning = /claude-3[.-]7|claude-3[.-]5-sonnet|o3|o1|r1|gemini-1\.5-pro|gemini-2\.5-pro|gpt-4o\b/.test(id);
+      const isFastFlash = /flash|haiku|mini|small|lite/.test(id);
+
+      if (isDestructiveOrRisky) {
+        if (isHeavyReasoning) {
+          score = 96;
+          reason = "Silné uvažování pro rizikové a nevratné změny";
+        } else if (isFastFlash) {
+          score = 68;
+          reason = "Rychlý model, nižší hloubka analýzy rizik";
+        } else {
+          score = 82;
+          reason = "Dostatečný pro středně náročné operace";
+        }
+      } else if (isReadOnly) {
+        if (isFastFlash) {
+          score = 97;
+          reason = "Blesková odezva a minimální spotřeba pro čtení";
+        } else if (isHeavyReasoning) {
+          score = 74;
+          reason = "Příliš nákladný pro rutinní zjišťování dat";
+        } else {
+          score = 88;
+          reason = "Spolehlivý pro syntézu výstupu";
+        }
+      } else {
+        if (isHeavyReasoning) {
+          score = 94;
+          reason = "Vysoká přesnost pro generování a úpravy kódu";
+        } else if (isFastFlash) {
+          score = 85;
+          reason = "Rychlá iterace běžných úprav";
+        } else {
+          score = 86;
+          reason = "Vyvážený poměr kvality a rychlosti";
+        }
+      }
+
+      // Bonus za časté používání v minulosti (až +4 %)
+      if (m.turns > 20) score = Math.min(99, score + 4);
+      else if (m.turns > 5) score = Math.min(99, score + 2);
+
+      return {
+        modelKey: m.modelKey,
+        provider: m.provider,
+        id: m.id,
+        score,
+        reason,
+        turns: m.turns,
+        source: m.source,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
 }
