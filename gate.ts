@@ -155,12 +155,12 @@ export async function handleToolCallGate(
     options.push(quickThinkingOption);
   }
 
-  const switchModelOption = "Přepnout model a zopakovat tah...";
+  const switchModelOption = "Přepnout model a zopakovat tah";
   if (pi) {
     options.push(switchModelOption);
   }
 
-  const changeThinkingOption = "Změnit úroveň myšlení (thinking)...";
+  const changeThinkingOption = "Změnit úroveň myšlení (thinking)";
   if (pi) {
     options.push(changeThinkingOption);
   }
