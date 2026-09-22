@@ -1,6 +1,6 @@
 // index.ts — vstupní bod rozšíření pi-decision-gate
 
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -39,17 +39,23 @@ import type { ApprovalMode } from "./types";
 // Cesta ke skriptu, který osvěží katalog modelů z OpenRouteru
 const MODELS_SCRIPT = join(dirname(fileURLToPath(import.meta.url)), "scripts", "fetch-models.mjs");
 
+// Držíme referenci na běžící child, aby ho session_shutdown mohl ukončit.
+let modelCatalogChild: ChildProcess | null = null;
+
 /**
  * Spustí asynchronně skript pro osvěžení models.json (neblokuje sezení).
  */
 function refreshModelCatalog(): void {
   try {
     const child = spawn(process.execPath, [MODELS_SCRIPT], { stdio: "ignore" });
-    child.on("error", () => {
-      // Chyba spuštění skriptu nesmí ovlivnit sezení.
-    });
+    modelCatalogChild = child;
+    const forget = () => {
+      if (modelCatalogChild === child) modelCatalogChild = null;
+    };
+    child.on("error", forget);
+    child.on("exit", forget);
   } catch {
-    // ignorujeme
+    modelCatalogChild = null;
   }
 }
 
@@ -67,6 +73,19 @@ export default function (pi: ExtensionAPI): void {
   // 2. Reakce na změnu modelu v sezení
   pi.on("model_select", async (_event, ctx: ExtensionContext) => {
     updateStatusline(ctx);
+  });
+
+  // 2b. Úklid při ukončení sezení — zastaví případný běžící refresh child
+  // (AGENTS.md §4/§6).
+  pi.on("session_shutdown", () => {
+    if (modelCatalogChild && !modelCatalogChild.killed) {
+      try {
+        modelCatalogChild.kill();
+      } catch {
+        /* already gone */
+      }
+    }
+    modelCatalogChild = null;
   });
 
   // 3. Zachytávání akcí modelu před provedením
