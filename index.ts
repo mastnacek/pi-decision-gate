@@ -60,24 +60,33 @@ function refreshModelCatalog(): void {
 }
 
 export default function (pi: ExtensionAPI): void {
+  /** Unsubscribers from every `pi.on()`; drained on session_shutdown (AGENTS §5). */
+  const unsubscribers: Array<() => void> = [];
+
+  /** Retain a `pi.on()` return value; older engine typings declare it void. */
+  const track = (result: unknown): void => {
+    if (typeof result === "function") unsubscribers.push(result as () => void);
+  };
+
   // 1. Inicializace při startu sezení
-  pi.on("session_start", async (_event, ctx: ExtensionContext) => {
+  track(pi.on("session_start", async (_event, ctx: ExtensionContext) => {
     loadConfig(ctx.cwd);
     updateStatusline(ctx);
     // Osvěží models.json z OpenRouteru na pozadí (neblokuje)
     refreshModelCatalog();
     // Asynchronní načtení kurzu ČNB a zůstatku OpenRouteru
     await refreshStatuslineAsync(ctx);
-  });
+  }));
 
   // 2. Reakce na změnu modelu v sezení
-  pi.on("model_select", async (_event, ctx: ExtensionContext) => {
+  track(pi.on("model_select", async (_event, ctx: ExtensionContext) => {
     updateStatusline(ctx);
-  });
+  }));
 
   // 2b. Úklid při ukončení sezení — zastaví případný běžící refresh child
   // (AGENTS.md §4/§6).
   pi.on("session_shutdown", () => {
+    while (unsubscribers.length > 0) unsubscribers.pop()?.();
     if (modelCatalogChild && !modelCatalogChild.killed) {
       try {
         modelCatalogChild.kill();
@@ -89,9 +98,9 @@ export default function (pi: ExtensionAPI): void {
   });
 
   // 3. Zachytávání akcí modelu před provedením
-  pi.on("tool_call", async (event, ctx: ExtensionContext) => {
+  track(pi.on("tool_call", async (event, ctx: ExtensionContext) => {
     return handleToolCallGate(event, ctx, pi);
-  });
+  }));
 
   // 4. Registrace příkazů s líným doplňováním parametrů
   const registerGateCommands = (cmdName: string) => {
