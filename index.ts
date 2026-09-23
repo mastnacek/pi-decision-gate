@@ -144,8 +144,8 @@ export default function (pi: ExtensionAPI): void {
           if (sub === "exempt") {
             const subs = [
               { value: "exempt list", label: "exempt list", description: "Zobrazit osvobozené nástroje" },
-              { value: "exempt add", label: "exempt add <nástroj>", description: "Přidat nástroj do výjimek" },
-              { value: "exempt remove", label: "exempt remove <nástroj>", description: "Odebrat nástroj z výjimek" },
+              { value: "exempt add ", label: "exempt add <nástroj>", description: "Přidat nástroj do výjimek" },
+              { value: "exempt remove ", label: "exempt remove <nástroj>", description: "Odebrat nástroj z výjimek" },
             ];
             const filtered = subs.filter((i) => i.value.toLowerCase().startsWith(normalized));
             return filtered.length > 0 ? filtered : null;
@@ -164,9 +164,17 @@ export default function (pi: ExtensionAPI): void {
 
         // 1. úroveň autocompletu — podpříkazy ze slovníku
         const typed = (tokens[0] ?? "").toLowerCase();
-        const items = Object.entries(COMMAND_DOCS)
-          .filter(([key]) => key.toLowerCase().startsWith(typed))
-          .map(([value, description]) => ({ value, label: value, description }));
+        const NON_TERMINAL = new Set(["mode", "jev", "edit", "threshold", "exempt", "balance"]);
+        const items: AutocompleteItem[] = [];
+        for (const [key, description] of Object.entries(COMMAND_DOCS)) {
+          if (key.toLowerCase().startsWith(typed)) {
+            items.push({
+              value: NON_TERMINAL.has(key) ? `${key} ` : key,
+              label: key,
+              description,
+            });
+          }
+        }
 
         return items.length > 0 ? items : null;
       },
