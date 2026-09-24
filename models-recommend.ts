@@ -1,9 +1,6 @@
 // Extracted from models.ts to keep modules focused.
 // models.ts — detekce a přehled modelů z historie sezení a konfigurace Pi agenta
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
-import { homedir } from "node:os";
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
 	type HerdrPaneRecommendation,

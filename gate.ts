@@ -1,84 +1,23 @@
 // gate.ts — hlavní logika zachytávání a schvalování rozhodnutí modelu
 
-import { appendFileSync, existsSync, mkdirSync } from "node:fs";
-import { join } from "node:path";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { fmtSmallAmount } from "./balance";
 import { state } from "./config";
+import { resolveGateChoice } from "./gate-actions";
+import { buildGatePrompt } from "./gate-prompt";
 import { assessActionWithJev, matchesDestructivePattern } from "./jev";
-import { evaluateModelSuitability, getHerdrPaneRecommendation, getThinkingRecommendation, recommendModelsForAction } from "./models";
-import { isHerdrEnvironment, promptHerdrAgent, splitHerdrPane, startHerdrAgent } from "./herdr";
+import { recommendModelsForAction } from "./models";
+import { promptHerdrAgent, splitHerdrPane, startHerdrAgent } from "./herdr";
 import {
   ANSI_BOLD,
   ANSI_RESET,
-  ELDRITCH_CYAN,
   ELDRITCH_DIM,
   ELDRITCH_GRAY,
-  ELDRITCH_GREEN,
-  ELDRITCH_ORANGE,
-  ELDRITCH_PURPLE,
   ELDRITCH_PURPLE_LIGHT,
-  ELDRITCH_RED,
-  ELDRITCH_TEXT,
   ELDRITCH_YELLOW,
-  highlightJsonEldritch,
   paint,
   updateStatusline,
 } from "./status";
-import type { DecisionRecord, ModelSuitability, ThinkingRecommendation } from "./types";
-
-/**
- * Uloží záznam o rozhodnutí do auditního logu (.pi/decision-gate/decisions.jsonl)
- */
-function logDecision(record: DecisionRecord, cwd?: string): void {
-  if (!state.config.logDecisions || !cwd) return;
-  try {
-    const logDir = join(cwd, ".pi", "decision-gate");
-    if (!existsSync(logDir)) {
-      mkdirSync(logDir, { recursive: true });
-    }
-    const logFile = join(logDir, "decisions.jsonl");
-    appendFileSync(logFile, JSON.stringify(record) + "\n", "utf8");
-  } catch {
-    // ignorujeme chybu zápisu logu
-  }
-}
-
-/**
- * Sestaví jednořádkový verdikt o myšlení a modelu pro hlavičku dialogu.
- */
-function buildDecisionVerdictLine(
-  ctx: ExtensionContext,
-  thinkingRec: ThinkingRecommendation,
-  currentCandidate: ModelSuitability | undefined,
-): string {
-  const currentThinking = (ctx.thinkingLevel ?? "medium").toLowerCase();
-
-  const thinkingSeg = thinkingRec.canOptimize
-    ? `${currentThinking} → ${thinkingRec.recommendedLevel}`
-    : `${currentThinking} ✓`;
-
-  const reasons: string[] = [];
-  if (thinkingRec.canOptimize) {
-    reasons.push(thinkingRec.reason);
-  }
-  if (currentCandidate?.cacheNotice?.startsWith("✓")) {
-    reasons.push("přepnutí modelu by ztratilo prompt cache");
-  }
-
-  const reasonText =
-    reasons.length > 0 ? reasons.join("; ") : "aktuální nastavení vyhovuje";
-
-  return [
-    paint(ELDRITCH_PURPLE, "🧠"),
-    paint(ELDRITCH_TEXT, thinkingSeg),
-    paint(ELDRITCH_DIM, "·"),
-    paint(ELDRITCH_CYAN, "🤖"),
-    paint(ELDRITCH_TEXT, "keep model"),
-    paint(ELDRITCH_DIM, "—"),
-    paint(ELDRITCH_GRAY, reasonText),
-  ].join(" ");
-}
+import { logDecision } from "./gate-log";
 
 /**
  * Interceptuje tool_call a zprostředkuje schválení uživatelem
@@ -152,83 +91,18 @@ export async function handleToolCallGate(
     return undefined;
   }
 
-  const rawPreview = JSON.stringify(event.input, null, 2);
-  const preview = highlightJsonEldritch(rawPreview);
+	const {
+		header,
+		options,
+		rawPreview,
+		thinkingRec,
+		herdrRec,
+		quickThinkingOption,
+		herdrPaneOption,
+		switchModelOption,
+		changeThinkingOption,
+	} = buildGatePrompt({ event, ctx, assessment, config, modelLabel, thinking, pi });
 
-  // Popisky hodnocení Jev v barvách Eldritch
-  const riskColor = assessment.riskCategory === "destructive"
-    ? `${ANSI_BOLD}${ELDRITCH_RED}`
-    : assessment.riskCategory === "moderate"
-      ? ELDRITCH_YELLOW
-      : ELDRITCH_GREEN;
-
-  const costInfo = assessment.costCzk !== undefined
-    ? `${fmtSmallAmount(assessment.costCzk)} Kč`
-    : `$${fmtSmallAmount(assessment.costUsd)}`;
-
-  const thinkingRec = getThinkingRecommendation(event.toolName, event.input, assessment, ctx.thinkingLevel);
-  const herdrRec = getHerdrPaneRecommendation(event.toolName, event.input, assessment, ctx);
-
-  const hints: string[] = [];
-  if (herdrRec.suitable) {
-    hints.push(`${paint(ELDRITCH_CYAN, "🪟 Herdr:")} ${paint(ELDRITCH_TEXT, herdrRec.reason)}`);
-  }
-
-  // Jednořádkový verdikt o myšlení a modelu (nad "Vyberte akci")
-  const suitability = evaluateModelSuitability(event.toolName, event.input, assessment, ctx);
-  const currentCandidate = suitability.find((c) => c.modelKey === modelLabel);
-  const verdictLine = buildDecisionVerdictLine(ctx, thinkingRec, currentCandidate);
-
-  const header = [
-    `${ANSI_BOLD}${ELDRITCH_PURPLE_LIGHT}🛡️  Rozhodnutí modelu vyžaduje schválení${ANSI_RESET}`,
-    paint(ELDRITCH_DIM, "─".repeat(54)),
-    `${paint(ELDRITCH_GRAY, "Navrhl model:  ")}${paint(ELDRITCH_PURPLE, modelLabel)}${paint(ELDRITCH_DIM, thinking)}`,
-    `${paint(ELDRITCH_GRAY, "Nástroj:       ")}${paint(ANSI_BOLD + ELDRITCH_CYAN, event.toolName)}`,
-    `${paint(ELDRITCH_GRAY, "Posouzení Jev: ")}${paint(riskColor, `Riziko ${assessment.riskScore.toFixed(2)}/2.0 (${assessment.riskCategory})`)}${paint(ELDRITCH_DIM, " │ ")}${paint(ELDRITCH_GRAY, "Nevratnost: ")}${paint(ELDRITCH_TEXT, `${Math.round(assessment.irreversibleProb * 100)}%`)}${paint(ELDRITCH_DIM, " │ ")}${paint(ELDRITCH_GRAY, "Náklad: ")}${paint(ELDRITCH_ORANGE, costInfo)}`,
-    ...hints,
-    "",
-    `${ANSI_BOLD}${ELDRITCH_PURPLE}Navrhované argumenty:${ANSI_RESET}`,
-    preview,
-    "",
-    verdictLine,
-    paint(ELDRITCH_PURPLE_LIGHT, "Vyberte akci:"),
-  ].join("\n");
-
-  const options = ["Schválit"];
-
-  const quickThinkingOption = `Schválit + thinking [${thinkingRec.recommendedLevel}]`;
-  if (pi && thinkingRec.canOptimize) {
-    options.push(quickThinkingOption);
-  }
-
-  let herdrPaneOption: string | undefined;
-  if (isHerdrEnvironment()) {
-    if (herdrRec.suitable) {
-      herdrPaneOption = `🪟 Spustit v novém okně [doporučeno: ${herdrRec.recommendedModel} · ${herdrRec.recommendedEffort}]`;
-    } else {
-      herdrPaneOption = "🪟 Spustit v novém okně (Herdr pane)";
-    }
-  }
-
-  if (herdrPaneOption) {
-    options.push(herdrPaneOption);
-  }
-
-  const switchModelOption = "Přepnout model a zopakovat tah";
-  if (pi) {
-    options.push(switchModelOption);
-  }
-
-  const changeThinkingOption = "Změnit úroveň myšlení (thinking)";
-  if (pi) {
-    options.push(changeThinkingOption);
-  }
-
-  if (config.allowEdit) {
-    options.push("Upravit argumenty");
-  }
-  options.push("Odmítnout");
-  options.push(`Osvobodit '${event.toolName}' pro toto sezení`);
 
   const choice = await ctx.ui.select(header, options);
 
@@ -428,107 +302,14 @@ export async function handleToolCallGate(
   }
 
   // Zpracování volby
-  if (!choice || choice === "Odmítnout") {
-    state.blockedCount += 1;
-    logDecision(
-      {
-        id: Math.random().toString(36).slice(2, 10),
-        timestamp: new Date().toISOString(),
-        model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
-        tool: event.toolName,
-        input: event.input,
-        verdict: "rejected",
-        assessment,
-      },
-      ctx.cwd,
-    );
-    updateStatusline(ctx);
-    return {
-      block: true,
-      reason: `Akce nástroje '${event.toolName}' navržená modelem [${modelLabel}] byla zamítnuta uživatelem.`,
-    };
-  }
-
-  if (choice === `Osvobodit '${event.toolName}' pro toto sezení`) {
-    state.sessionExemptions.add(event.toolName);
-    state.approvedCount += 1;
-    ctx.ui.notify(`Nástroj '${event.toolName}' byl osvobozen od schvalování pro zbytek sezení.`, "info");
-    logDecision(
-      {
-        id: Math.random().toString(36).slice(2, 10),
-        timestamp: new Date().toISOString(),
-        model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
-        tool: event.toolName,
-        input: event.input,
-        verdict: "approved",
-        assessment,
-      },
-      ctx.cwd,
-    );
-    updateStatusline(ctx);
-    return undefined;
-  }
-
-  if (choice === "Upravit argumenty") {
-    const editedText = await ctx.ui.editor(`Upravit parametry nástroje ${event.toolName} (JSON):`, rawPreview);
-    if (editedText) {
-      try {
-        const parsed = JSON.parse(editedText);
-        // Upravit argumenty in-place
-        for (const k of Object.keys(event.input)) {
-          delete event.input[k];
-        }
-        Object.assign(event.input, parsed);
-
-        state.editedCount += 1;
-        state.approvedCount += 1;
-        ctx.ui.notify(`Parametry nástroje '${event.toolName}' upraveny a schváleny.`, "info");
-        logDecision(
-          {
-            id: Math.random().toString(36).slice(2, 10),
-            timestamp: new Date().toISOString(),
-            model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
-            tool: event.toolName,
-            input: parsed,
-            verdict: "edited",
-            assessment,
-          },
-          ctx.cwd,
-        );
-        updateStatusline(ctx);
-        return undefined;
-      } catch {
-        state.blockedCount += 1;
-        updateStatusline(ctx);
-        return {
-          block: true,
-          reason: `Úprava parametrů nástroje '${event.toolName}' obsahovala neplatný JSON. Akce zrušena.`,
-        };
-      }
-    } else {
-      state.blockedCount += 1;
-      updateStatusline(ctx);
-      return {
-        block: true,
-        reason: `Úprava parametrů nástroje '${event.toolName}' byla uživatelem stornována.`,
-      };
-    }
-  }
-
-  // Schváleno
-  state.approvedCount += 1;
-  logDecision(
-    {
-      id: Math.random().toString(36).slice(2, 10),
-      timestamp: new Date().toISOString(),
-      model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
-      tool: event.toolName,
-      input: event.input,
-      verdict: "approved",
-      assessment,
-    },
-    ctx.cwd,
-  );
-  updateStatusline(ctx);
-  return undefined;
+	return resolveGateChoice(choice, {
+		event,
+		ctx,
+		assessment,
+		modelProvider,
+		modelId,
+		modelLabel,
+		rawPreview,
+	});
 }
+
