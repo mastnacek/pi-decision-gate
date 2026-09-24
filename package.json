@@ -34,7 +34,7 @@
   "scripts": {
     "check": "tsc --noEmit",
     "fetch-models": "node scripts/fetch-models.mjs",
-    "test": "node --test test/**/*.test.js"
+    "test": "npx tsx --test test/**/*.test.js"
   },
   "pi": {
     "extensions": [
