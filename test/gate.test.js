@@ -1,9 +1,13 @@
 // Characterization tests for the tool-call approval gate.
 //
-// These pin the CURRENT behaviour of `handleToolCallGate` — including the
-// security-relevant decisions (which modes block, what the headless path does) —
-// so the module can be refactored for the line-limit rule without changing
-// semantics. Assertions describe today's behaviour, not an idealised one.
+// These pin the behaviour of `handleToolCallGate` — including the security-relevant
+// decisions (which modes block, what the headless path does) — so the module can be
+// refactored for the line-limit rule without changing semantics.
+//
+// They were written against the unmodified module and describe its real behaviour.
+// One assertion has since been changed deliberately: the headless path used to grant
+// approvals without writing an audit record; that gap is now fixed, so the test
+// asserts the record is written.
 //
 // `state.config.useJev === false` keeps `assessActionWithJev` on its deterministic
 // offline fallback (risk 2.0 for destructive/sensitive input, else 0.2), so no
@@ -121,16 +125,19 @@ test("session exemptions skip the gate even for destructive calls", async () => 
 
 /* --------------------------------------------------------------- approval decision */
 
-test("mode 'always' without a UI auto-approves and writes no audit record", async () => {
-	// FINDING: the headless branch increments the counter and returns without
-	// logging, so approvals granted without a UI are invisible in the audit trail.
-	// Pinned as-is; see the handoff note about gate.ts.
+test("mode 'always' without a UI auto-approves and records it in the audit log", async () => {
+	// FIXED: the headless branch used to bump the counter and return without logging,
+	// so approvals granted without a UI were invisible in the audit trail. It now
+	// records them as `auto_approved`, like the other automatic approvals.
 	const { ctx, seenOptions } = makeCtx();
 
 	assert.equal(await handleToolCallGate(SAFE(), ctx), undefined);
 	assert.equal(counters().approved, 1);
 	assert.equal(seenOptions.length, 0, "no prompt without a UI");
-	assert.deepEqual(logRecords(), [], "headless approval is not logged");
+	const records = logRecords();
+	assert.equal(records.length, 1, "headless approval IS logged");
+	assert.equal(records[0].verdict, "auto_approved");
+	assert.equal(records[0].tool, "bash");
 });
 
 test("an auto-approved call with a UI present is logged as auto_approved", async () => {

@@ -84,10 +84,24 @@ export async function handleToolCallGate(
     return undefined;
   }
 
-  // 6. Sestavení dialogu pro schválení v TUI
+  // 6. Bez UI (headless/print) dialog zobrazit nelze — akce se schválí automaticky.
+  //    Automatické schválení bez souhlasu uživatele MUSÍ jít do auditního logu,
+  //    jinak jsou headless schválení v decisions.jsonl neviditelná.
   if (!ctx.hasUI) {
-    // V headless/print režimu bez UI schválíme nebo zablokujeme dle konfigurace
     state.approvedCount += 1;
+    logDecision(
+      {
+        id: Math.random().toString(36).slice(2, 10),
+        timestamp: new Date().toISOString(),
+        model: { provider: modelProvider, id: modelId, thinking: ctx.thinkingLevel },
+        tool: event.toolName,
+        input: event.input,
+        verdict: "auto_approved",
+        assessment,
+      },
+      ctx.cwd,
+    );
+    updateStatusline(ctx);
     return undefined;
   }
 
